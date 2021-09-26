@@ -78,7 +78,8 @@
     
 
     3.调用接口就完事了，param就是传参页数 
-![image](https://user-images.githubusercontent.com/41224971/134793215-8f45a95b-a234-4023-aa5f-39d748faded4.png)
+![image](https://user-images.githubusercontent.com/41224971/134799668-3dd385e7-f44c-4fb3-85ff-00d78c674865.png)
+
     控制台可以关，但是注入的网页不要关哦
     
 
