@@ -36,6 +36,7 @@
     
 ### 食用方法
    ![image](https://user-images.githubusercontent.com/41224971/134774461-1b502f9f-f58d-4fd8-9a8e-9ac402ef9b60.png)
+   
     打开编译好的go文件，开启服务
     有3个接口:
         /list是查看当前连接的ws服务
