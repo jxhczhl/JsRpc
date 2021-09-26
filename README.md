@@ -72,7 +72,8 @@
 
     2.先在控制台粘贴我的js环境，再注入一个rpc链接 注册一个call方法，名字自定义 第二个参数粘贴上面call的代码，小小修改一下
        先定义num=param 这样就传参进来了，再定义一个变量来保存获取到的数据，resolve(变量) 就是发送。完了就注入好了，可以把f12关掉了
-![image](https://user-images.githubusercontent.com/41224971/134793215-8f45a95b-a234-4023-aa5f-39d748faded4.png)
+![image](https://user-images.githubusercontent.com/41224971/134795740-c62fce0d-7271-4b34-a9e5-07515b99ab81.png)
+
 
     
 
