@@ -7,8 +7,10 @@
     -- JsEnv.js (客户端-网页上的js环境)
     
     
-    ws注入
+  
     先粘贴JsEnv环境到网站控制台
+    
+    再注入ws 控制台粘贴
     var demo = new Hlclient("wss://域名:12443/ws?group=test&name=test")
     
     注册一个方法 第一个参数hello为方法名，第二个参数为函数，resolve里面的值是想要的值，param是可传参参数，可以忽略
@@ -44,7 +46,7 @@
         /go是获取数据的接口 (数据格式json: {"group":"hhh","hello":"好困啊yes","name":"baidu","status":"200"} )
         
         
-    说明：接口都用?group和name来区分，我也不知道我为啥要抄两个名字来区分
+    说明：接口用?group和name来区分，我也不知道我为啥要抄两个名字来区分
     wss://域名.cn:12443/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
     https://域名.cn:12443/go?group={}&name={}?action={}&param={} //group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
     
