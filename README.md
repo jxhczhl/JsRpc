@@ -8,8 +8,11 @@
     
     
     ws注入
+    先粘贴JsEnv环境到网站控制台
     var demo = new Hlclient("wss://域名:12443/ws?group=test&name=test")
+    
     注册一个方法 第一个参数hello为方法名，第二个参数为函数，resolve里面的值是想要的值，param是可传参参数，可以忽略
+    
     demo.regAction("hello", function (resolve,param) {
 	    var c="好烦呐"+param
         resolve(c);
@@ -32,7 +35,7 @@
     另外的题外话，有域名没证书不会搞的 或者有域名有公网(非固定IP的)都可以搞成的，自己研究研究
     
 ### 食用方法
-    ![image](https://user-images.githubusercontent.com/41224971/134774461-1b502f9f-f58d-4fd8-9a8e-9ac402ef9b60.png)
+   ![image](https://user-images.githubusercontent.com/41224971/134774461-1b502f9f-f58d-4fd8-9a8e-9ac402ef9b60.png)
     打开编译好的go文件，开启服务
     有3个接口:
         /list是查看当前连接的ws服务
