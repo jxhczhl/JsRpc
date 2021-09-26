@@ -62,18 +62,20 @@
 
 ### 食用案例-爱锭网15题
     本题解是把它ajax获取数据那一个函数都复制下来，然后控制台调用这样子~
-    ![image](https://user-images.githubusercontent.com/41224971/134793093-bac742e9-2f66-4fe4-b98b-7769d7379350.png)
-    1.f12查看请求，跟进去 找到ajax那块，可以看到call函数就是主要的ajax发包 输入页数就可以，那我们复制这个函数里面的代码备用
     
-    ![image](https://user-images.githubusercontent.com/41224971/134793125-1b262f08-56b1-4f8d-b5d5-bfe7a1925252.png)
+
+    1.f12查看请求，跟进去 找到ajax那块，可以看到call函数就是主要的ajax发包 输入页数就可以，那我们复制这个函数里面的代码备用
+![image](https://user-images.githubusercontent.com/41224971/134793093-bac742e9-2f66-4fe4-b98b-7769d7379350.png)
+    
+    
 
     2.先在控制台粘贴我的js环境，再注入一个rpc链接 注册一个call方法，名字自定义 第二个参数粘贴上面call的代码，小小修改一下
        先定义num=param 这样就传参进来了，再定义一个变量来保存获取到的数据，resolve(变量) 就是发送。完了就注入好了，可以把f12关掉了
-       
-    ![image](https://user-images.githubusercontent.com/41224971/134793215-8f45a95b-a234-4023-aa5f-39d748faded4.png)
+![image](https://user-images.githubusercontent.com/41224971/134793125-1b262f08-56b1-4f8d-b5d5-bfe7a1925252.png)
+    
 
     3.调用接口就完事了，param就是传参页数 
-    
+![image](https://user-images.githubusercontent.com/41224971/134793215-8f45a95b-a234-4023-aa5f-39d748faded4.png)
     控制台可以关，但是注入的网页不要关哦
     
 
