@@ -12,7 +12,7 @@
     先粘贴JsEnv环境到网站控制台
     
     再注入ws 控制台粘贴
-    var demo = new Hlclient("wss://域名:12443/ws?group=test&name=test")
+    var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=test&name=test")
     
     注册一个方法 第一个参数hello为方法名，第二个参数为函数，resolve里面的值是想要的值，param是可传参参数，可以忽略
     
@@ -32,7 +32,7 @@
 
     在https的网站想要新建WebSocket连接如果是连接到普通的ws可能会报安全错误，所以需要更换为wss。但是wss搭建可能有点费时和力 你们看着玩吧
     
-    1.无https证书者。直接编译main.go 我试了自己的win7电脑，发现谷歌浏览器可以在https的网站连接ws而不一定要wss,所以在win7及以下的系统可能可以直接开服务用 默认端口12080
+    1.无https证书者。直接编译main.go 我试了一下，发现使用本地ip(127.0.0.1)可以在https的网站直接连接ws使用 默认端口12080
     
     2.有https证书者。修改main.go文件 把r.Run()注释掉，把r.RunTls注释取消掉 并且参数设置证书的路径 直接输入名字就是当前路径 默认端口：12443
     
@@ -49,8 +49,8 @@
         
         
     说明：接口用?group和name来区分，我也不知道我为啥要抄两个名字来区分
-    wss://域名.cn:12443/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
-    https://域名.cn:12443/go?group={}&name={}?action={}&param={} //group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
+    ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
+    http://127.0.0.1:12080/go?group={}&name={}?action={}&param={} //group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
     
     步骤一：粘贴js环境
    ![image](https://user-images.githubusercontent.com/41224971/134774597-5c8c845b-072e-40d1-bdf7-24e89f78b22e.png)
