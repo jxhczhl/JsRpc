@@ -10,33 +10,31 @@ import (
 	"strings"
 	"sync"
 )
-//这里是普通http端口和ssl端口设置，随你改
-var Port=":12080"
+
+var LocalPort=":12080"
 var sslPort = ":12443"
 
-
-//声明一个结构体 注入的ws就保存为结构体
 type Clients struct {
 	clientGroup string
 	clientName  string
-	//Data就是存方法的最新消息 用1个位置的管道来存
-	Data        map[string]chan string
-	clientWs    *websocket.Conn
+	//Action      map[string]string
+	Data     map[string]chan string
+	clientWs *websocket.Conn
 }
 
 var upGrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
-//存所有ws
+
 var hlClients sync.Map
 
 func NewClient(group string, name string, ws *websocket.Conn) *Clients {
-
+	
 	client := &Clients{
 		clientGroup: group,
 		clientName:  name,
 		Data:        make(map[string]chan string, 1),
-
+		//Action:      make(map[string]string),
 		clientWs: ws,
 	}
 	return client
@@ -54,16 +52,27 @@ func ws(c *gin.Context) {
 		return
 	}
 	client := NewClient(getGroup, getName, ws)
-
+	//message := []byte("hello," + getGroup + "->" + getName)
+	//err = ws.WriteMessage(1, message)
 	hlClients.Store(getGroup+"->"+getName, client)
 	for {
-		//读取ws中的数据
+		
 		_, message, err := ws.ReadMessage()
 		if err != nil {
 			break
 		}
 		msg := string(message)
-
+		//check:=[]uint8{104,108,65,99,116,105,111,110,58,94,95,94}
+		////fmt.Println(msg,string(check)==msg[:12])
+		//if len(msg)>12{
+		//	if string(check)==msg[:12]{
+		//		action:=msg[12:]
+		//		//client.Action[action]=""
+		//		hlClients.Store(getGroup + "->" + getName, client)
+		//	}
+		//}else{
+		//	fmt.Println(msg)
+		//}
 
 		check := []uint8{104, 108, 94, 95, 94}
 
@@ -77,13 +86,12 @@ func ws(c *gin.Context) {
 			}
 			client.Data[action] <- msg[strIndex+5:]
 
-			//fmt.Println("go")
-
+			
 			hlClients.Store(getGroup+"->"+getName, client)
 		} else {
 			fmt.Println(msg)
 		}
-
+		
 	}
 	hlClients.Delete(getGroup + "->" + getName)
 	defer ws.Close()
@@ -112,8 +120,9 @@ func Go(c *gin.Context) {
 		return
 	}
 	//fmt.Println(getGroup, getName)
+	fmt.Println(getGroup + "->" + getName)
 	clientName, ok := hlClients.Load(getGroup + "->" + getName)
-
+	fmt.Println(clientName)
 	if ok == false {
 		c.String(200, "注入了ws？没有找到当前组和名字")
 		return
@@ -128,10 +137,11 @@ func Go(c *gin.Context) {
 		value.Data[getAction] = make(chan string, 1)
 	}
 
-	//执行发送函数
+
 
 	QueryFunc(value, getAction, getParam)
-
+	//time.Sleep(time.Second)
+	//data:=value.Action[getAction]
 
 	data := <-value.Data[getAction]
 
@@ -147,14 +157,12 @@ func getList(c *gin.Context) {
 	resList := "hliang:\r\n"
 	hlClients.Range(func(key, value interface{}) bool {
 		resList += key.(string) + "\r\n\t"
+		
 		return true
 	})
 	c.String(200, resList)
 }
 
-func Home(c *gin.Context) {
-	c.String(200, "你好~")
-}
 func TlsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		secureMiddleware := secure.New(secure.Options{
@@ -172,15 +180,11 @@ func TlsHandler() gin.HandlerFunc {
 
 func main() {
 	r := gin.Default()
-	r.GET("/", Home)
 	r.GET("/go", Go)
 	r.GET("/ws", ws)
 	r.GET("/list", getList)
 	r.Use(TlsHandler())
-	r.Run(Port)
-
-	//如果有https证书，请注释上面r.run那行，并把下面RunTls取消注释，设置pem和key为证书路径
-	//端口为12443
-	//r.RunTLS(sslPort, "zhengshu.pem", "zhengshu.key")
+	//r.Run(LocalPort)
+	r.RunTLS(sslPort, "zhengshu.pem", "zhengshu.key")
 
 }
