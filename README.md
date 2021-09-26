@@ -50,7 +50,7 @@
         
     说明：接口用?group和name来区分，我也不知道我为啥要抄两个名字来区分
     ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
-    http://127.0.0.1:12080/go?group={}&name={}?action={}&param={} //group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
+    http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
     
     步骤一：粘贴js环境
    ![image](https://user-images.githubusercontent.com/41224971/134774597-5c8c845b-072e-40d1-bdf7-24e89f78b22e.png)
