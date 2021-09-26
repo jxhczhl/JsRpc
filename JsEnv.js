@@ -19,16 +19,16 @@ Hlclient.prototype.connect = function () {
             _this.handlerRequest(e.data);
         }
     } catch (e) {
-        console.log("connection failed,reconnect after 30s");
+        console.log("connection failed,reconnect after 10s");
         setTimeout(function () {
             _this.connect()
-        }, 30000)
+        }, 10000)
     }
     this.socket["ySocket"].onclose = function () {
-        console.log("connection failed,reconnect after 30s");
+        console.log("connection failed,reconnect after 10s");
         setTimeout(function () {
             _this.connect()
-        }, 30000)
+        }, 10000)
     }
 
 };
@@ -50,7 +50,7 @@ Hlclient.prototype.regAction = function (func_name, func) {
 Hlclient.prototype.handlerRequest = function (requestJson) {
 	var _this = this;
 	var result=JSON.parse(requestJson);
-	console.log(result)
+	//console.log(result)
 	if (!result['action']) {
         this.sendFailed(seq, 'need request param {action}');
         return
