@@ -52,7 +52,7 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
 	var result=JSON.parse(requestJson);
 	//console.log(result)
 	if (!result['action']) {
-        this.sendFailed(seq, 'need request param {action}');
+        this.sendResult('','need request param {action}');
         return
     }
 	action=result["action"]
