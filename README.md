@@ -1,5 +1,5 @@
-# JsRpc
-## js逆向之远程调用(rpc)免去抠代码
+# JsRpc- hliang
+## js逆向之远程调用(rpc)免去抠代码补环境
 
 ### 懒得自己编译的 ，右侧releases有已经编译好的包 （win和Linux的都有~）
 
@@ -24,10 +24,11 @@
     另外的题外话，有域名没证书不会搞的 或者有域名有公网(非固定IP的)都可以搞成的，自己研究研究
     
 ### 食用方法
-   ![image](https://user-images.githubusercontent.com/41224971/134774461-1b502f9f-f58d-4fd8-9a8e-9ac402ef9b60.png)
+  
    
 #### 1.打开编译好的文件，开启服务
-	
+   ![image](https://user-images.githubusercontent.com/41224971/134774461-1b502f9f-f58d-4fd8-9a8e-9ac402ef9b60.png)
+    
     有3个接口:
         /list是查看当前连接的ws服务
         /ws是浏览器注入ws连接的接口
