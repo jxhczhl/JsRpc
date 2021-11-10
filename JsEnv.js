@@ -54,9 +54,13 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
 	if (!result['action']) {
         this.sendResult('','need request param {action}');
         return
-    }
-	action=result["action"]
+}
+    action=result["action"]
     var theHandler = this.handlers[action];
+    if (!theHandler ||theHandler==undefined){
+	    this.sendResult(action,'action not found');
+	    return
+    }
     try {
 		if (!result["param"]){
 			theHandler(function (response) {
