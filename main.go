@@ -20,9 +20,8 @@ var (
 	upGrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
+	hlSyncMap sync.Map
 )
-
-var hlSyncMap sync.Map
 
 // Clients provides Connect instance for a job
 type Clients struct {
@@ -105,7 +104,6 @@ func ws(c *gin.Context) {
 // ResultSet provides get result function for a job
 // you can use it to Remote operation and get results
 func ResultSet(c *gin.Context) {
-	//group, name, action, param := c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param")
 	group := c.Query("group")
 	name := c.Query("name")
 	action := c.Query("action")
@@ -167,13 +165,14 @@ func TlsHandler() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
 func main() {
 	r := gin.Default()
 	r.GET("/result", ResultSet)
 	r.GET("/ws", ws)
 	r.GET("/list", ClientConnectionList)
 	r.Use(TlsHandler())
-	//r.Run(LocalPort)
-	r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
+	r.Run(BasicPort)
+	//r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
 
 }
