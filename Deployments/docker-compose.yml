@@ -1,0 +1,7 @@
+version: "3.8"
+services:
+  jsrpc:
+    deploy:
+      replicas: 3
+    image: "${}"
+    restart: always  
