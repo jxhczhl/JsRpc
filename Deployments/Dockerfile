@@ -17,5 +17,5 @@ RUN  go mod tidy && go build -o /tmp/jsrpc .
 FROM alpine:latest
 WORKDIR /root/
 COPY --from=builder /tmp/jsrpc .
-EXPOSE ["12080"]
+EXPOSE 12080 12443
 CMD ["./jsrpc"]
