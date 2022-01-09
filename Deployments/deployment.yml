@@ -16,6 +16,9 @@ spec:
         - name: jsrpc
           image:
           imagePullPolicy: Always
+          ports:
+            - containerPort: 12080
+            - containerPort: 12443
       restartPolicy: Always
   selector:
     matchLabels:
@@ -25,10 +28,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name:
+  name: jsrpc
 spec:
   selector:
-    app:
-  ports:
-    - port: 8080
+    app: jsrpc
   type: NodePort
+  ports:
+    - name: basic
+      port: 12080
+      nodePort: 32080
+    - name: ssl
+      port: 12443
+      nodePort: 32443

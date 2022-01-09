@@ -4,4 +4,7 @@ services:
     deploy:
       replicas: 3
     image: "${}"
-    restart: always  
+    ports:
+      - "12080:12080"
+      - "12443:12443"
+    restart: always

@@ -6,12 +6,14 @@
 
 ## 目录结构
 
-    -- main.go (服务器的主代码)
-    -- JsEnv.js (客户端注入js环境)
+```dart
+-- main.go (服务器的主代码)
+-- resouces/JsEnv.js (客户端注入js环境)
+```
 
 ## 基本介绍
 
-    运行服务器程序和js脚本 即可让它们通信，实现调用接口执行js获取想要的值(加解密)
+运行服务器程序和js脚本 即可让它们通信，实现调用接口执行js获取想要的值(加解密)
 
 ## 实现
 
@@ -41,9 +43,8 @@
 - `/ws`  :浏览器注入ws连接的接口
 - `/result` :获取数据的接口  (数据格式json: {"group":"hhh","hello":"好困啊yes","name":"baidu","status":"200"} )
 
-    说明：接口用?group和name来区分
-    ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
-    http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
+  说明：接口用?group和name来区分 ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
+  http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
 
 ### 注入JS，构建通信环境
 
@@ -82,6 +83,10 @@ http://127.0.0.1:12080/go?group=hhh&name=baidu&action=hello&param=yes
 
 ![image](https://user-images.githubusercontent.com/41224971/134775037-167724d4-ae94-4fcf-88c4-d881621b712c.png)
 
+
+
+
+
 ## 食用案例-爱锭网15题
 
     本题解是把它ajax获取数据那一个函数都复制下来，然后控制台调用这样子~
@@ -102,3 +107,7 @@ http://127.0.0.1:12080/go?group=hhh&name=baidu&action=hello&param=yes
 
     控制台可以关，但是注入的网页不要关哦
 
+## TODO
+
+- [ ] ssl Docker Deploy
+- [ ] K8s Deploy
