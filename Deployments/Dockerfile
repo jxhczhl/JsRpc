@@ -10,10 +10,9 @@ ENV GOPROXY="https://goproxy.cn,direct" \
 WORKDIR /go/src/github.com/gowebspider/jsrpc/
 # Load file
 COPY . .
-## add rely
-go mod tidy/
-# Build and place the results in /tmp/goproxies
-RUN go build -o /tmp/jsrpc .
+# add rely
+# Build and place the results in /tmp/jsrpc
+RUN  go mod tidy && go build -o /tmp/jsrpc .
 
 FROM alpine:latest
 WORKDIR /root/
