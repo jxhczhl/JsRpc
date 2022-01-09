@@ -5,6 +5,7 @@ ENV GOPROXY="https://goproxy.cn,direct" \
     CGO_ENABLED="0" \
     GOOS="linux" \
     GOARCH="amd64"
+
 # Switch to workspace
 WORKDIR /go/src/github.com/gowebspider/jsrpc/
 # Load file
