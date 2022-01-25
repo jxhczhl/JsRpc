@@ -12,18 +12,20 @@ import (
 	"time"
 )
 
+//设置http版的端口号
 var LocalPort = ":12080"
+
+//设置https版的端口号(需带证书的)
 var sslPort = ":12443"
 
-//设置接口没得到结果时的超时时间
+// OverTime 设置接口没得到结果时的超时时间
 var OverTime = time.Second * 20
 
 type Clients struct {
 	clientGroup string
 	clientName  string
-	//Action      map[string]string
-	Data     map[string]string
-	clientWs *websocket.Conn
+	Data        map[string]string
+	clientWs    *websocket.Conn
 }
 
 var upGrader = websocket.Upgrader{
@@ -33,16 +35,12 @@ var upGrader = websocket.Upgrader{
 var hlClients sync.Map
 
 func NewClient(group string, name string, ws *websocket.Conn) *Clients {
-
-	client := &Clients{
+	return &Clients{
 		clientGroup: group,
 		clientName:  name,
 		Data:        make(map[string]string),
-		//Action:      make(map[string]string),
-		clientWs: ws,
+		clientWs:    ws,
 	}
-	return client
-
 }
 
 func ws(c *gin.Context) {
@@ -56,10 +54,7 @@ func ws(c *gin.Context) {
 		return
 	}
 	client := NewClient(getGroup, getName, ws)
-	//message := []byte("hello," + getGroup + "->" + getName)
-	//err = ws.WriteMessage(1, message)
 	hlClients.Store(getGroup+"->"+getName, client)
-	//defer ws.Close()
 	for {
 		//等待数据
 		_, message, err := ws.ReadMessage()
@@ -71,10 +66,7 @@ func ws(c *gin.Context) {
 		strIndex := strings.Index(msg, string(check))
 		if strIndex >= 1 {
 			action := msg[:strIndex]
-			//fmt.Println(action,"save msg")
-			//if client.Data[action] == "" {
-			//	client.Data[action] = msg[strIndex+5:]
-			//}
+
 			client.Data[action] = msg[strIndex+5:]
 			fmt.Println("get_message:", client.Data[action])
 			hlClients.Store(getGroup+"->"+getName, client)
@@ -83,7 +75,9 @@ func ws(c *gin.Context) {
 		}
 
 	}
-	defer ws.Close()
+	defer func(ws *websocket.Conn) {
+		_ = ws.Close()
+	}(ws)
 
 }
 
@@ -94,7 +88,6 @@ func QueryFunc(client *Clients, funcName string, param string) {
 	} else {
 		WriteDate = "{\"action\":\"" + funcName + "\",\"param\":\"" + param + "\"}"
 	}
-	//fmt.Println(WriteDate, "writeDate")
 	ws := client.clientWs
 	err := ws.WriteMessage(1, []byte(WriteDate))
 	if err != nil {
@@ -109,9 +102,7 @@ func Go(c *gin.Context) {
 		c.String(200, "input group and name")
 		return
 	}
-	//fmt.Println(getGroup, getName)
 	clientName, ok := hlClients.Load(getGroup + "->" + getName)
-	//fmt.Println(clientName, "clientName")
 	if ok == false {
 		c.String(200, "注入了ws？没有找到当前组和名字")
 		return
@@ -127,14 +118,12 @@ func Go(c *gin.Context) {
 	}
 	//发送数据到web里得到结果
 	QueryFunc(client, Action, getParam)
-	//time.Sleep(time.Second)
-	//data:=value.Action[getAction]
+
 	ctx, cancel := context.WithTimeout(context.Background(), OverTime)
 	for {
 		select {
 		case <-ctx.Done():
-			// 获取链接超时了
-			//fmt.Println("超时？")
+			// 获取数据超时了
 			cancel()
 			return
 		default:
@@ -148,10 +137,6 @@ func Go(c *gin.Context) {
 			} else {
 				time.Sleep(time.Millisecond * 500)
 			}
-
-			//else {
-			//	c.JSON(666, gin.H{"message": "?"})
-			//}
 		}
 	}
 
