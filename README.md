@@ -43,8 +43,9 @@
 - `/ws`  :浏览器注入ws连接的接口
 - `/result` :获取数据的接口  (数据格式json: {"group":"hhh","hello":"好困啊yes","name":"baidu","status":"200"} )
 
-  说明：接口用?group和name来区分 如 ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
-  http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
+
+说明：接口用?group和name来区分 如 ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
+http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
 
 ### 注入JS，构建通信环境
 
@@ -107,3 +108,7 @@ http://127.0.0.1:12080/go?group=hhh&name=baidu&action=hello&param=yes
 
     控制台可以关，但是注入的网页不要关哦
 
+## TODO
+
+- [ ] ssl Docker Deploy
+- [ ] K8s Deploy

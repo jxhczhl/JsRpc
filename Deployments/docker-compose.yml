@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  jsrpc:
+    deploy:
+      replicas: 3
+    image: "${}"
+    ports:
+      - "12080:12080"
+      - "12443:12443"
+    restart: always

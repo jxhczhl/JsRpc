@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployments
+metadata:
+  name: jsrpc
+  labels:
+    app: jsrpc
+spec:
+  replicas: 3
+  template:
+    metadata:
+      name: jsrpc
+      labels:
+        app: jsrpc
+    spec:
+      containers:
+        - name: jsrpc
+          image:
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 12080
+            - containerPort: 12443
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: jsrpc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jsrpc
+spec:
+  selector:
+    app: jsrpc
+  type: NodePort
+  ports:
+    - name: basic
+      port: 12080
+      nodePort: 32080
+    - name: ssl
+      port: 12443
+      nodePort: 32443
