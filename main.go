@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-
 var (
 	// BasicPort The original port without SSL certificate
 	BasicPort = `:12080`
@@ -24,9 +23,11 @@ var (
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	hlSyncMap sync.Map
+
+	// OverTime 设置接口没得到结果时的超时时间
+	OverTime = time.Second * 30
 )
 
-// Clients provides Connect instance for a job
 type Clients struct {
 	clientGroup string
 	clientName  string
@@ -35,16 +36,6 @@ type Clients struct {
 }
 
 // NewClients initializes a new Clients instance
-func NewClients(clientGroup string, clientName string, clientWs *websocket.Conn) *Clients {
-	return &Clients{
-		clientGroup: clientGroup,
-		clientName:  clientName,
-		clientWs:    clientWs,
-	}
-}
-
-var hlClients sync.Map
-
 func NewClient(group string, name string, ws *websocket.Conn) *Clients {
 	return &Clients{
 		clientGroup: group,
@@ -65,9 +56,10 @@ func ws(c *gin.Context) {
 		fmt.Println("websocket err:", err)
 		return
 	}
-	client := NewClients(group, name, ws)
+	client := NewClient(group, name, ws)
 	hlSyncMap.Store(group+"->"+name, client)
 	for {
+		//等待数据
 		_, message, err := ws.ReadMessage()
 		if err != nil {
 			break
@@ -77,11 +69,9 @@ func ws(c *gin.Context) {
 		strIndex := strings.Index(msg, string(check))
 		if strIndex >= 1 {
 			action := msg[:strIndex]
-
-
 			client.Data[action] = msg[strIndex+5:]
 			fmt.Println("get_message:", client.Data[action])
-			hlClients.Store(getGroup+"->"+getName, client)
+			hlSyncMap.Store(group+"->"+name, client)
 		} else {
 			fmt.Println(msg, "message error")
 		}
@@ -108,63 +98,57 @@ func QueryFunc(client *Clients, funcName string, param string) {
 
 }
 
-func Go(c *gin.Context) {
+func ResultSet(c *gin.Context) {
 	getGroup, getName, Action, getParam := c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param")
 	if getGroup == "" || getName == "" {
 		c.String(200, "input group and name")
 		return
 	}
-	clientName, ok := hlClients.Load(getGroup + "->" + getName)
-=======
-	hlSyncMap.Delete(group + "->" + name)
-	defer ws.Close()
-}
-
-// ResultSet provides get result function for a job
-// you can use it to Remote operation and get results
-func ResultSet(c *gin.Context) {
-	group := c.Query("group")
-	name := c.Query("name")
-	action := c.Query("action")
-	param := c.Query("param")
-
-	if group == "" || name == "" {
-		c.String(200, "input group and name")
-		return
-	}
-	fmt.Println(group + "->" + name)
-	clientName, ok := hlSyncMap.Load(group + "->" + name)
-	fmt.Println(clientName)
+	clientName, ok := hlSyncMap.Load(getGroup + "->" + getName)
 	if ok == false {
 		c.String(200, "注入了ws？没有找到当前组和名字")
 		return
 	}
-	if action == "" {
-		c.JSON(200, gin.H{"group": group, "name": name})
+	if Action == "" {
+		c.JSON(200, gin.H{"group": getGroup, "name": getName})
 		return
 	}
-
-	value, ko := clientName.(*Clients)
-	if value.Data[action] == nil {
-		value.Data[action] = make(chan string, 1)
+	//取一个ws客户端
+	client, ko := clientName.(*Clients)
+	if !ko {
+		return
 	}
-	QueryFunc(value, action, param)
-	data := <-value.Data[action]
+	//发送数据到web里得到结果
+	QueryFunc(client, Action, getParam)
 
-	if ko {
-		c.JSON(200, gin.H{"status": "200", "group": value.clientGroup, "name": value.clientName, action: data})
-	} else {
-		c.JSON(666, gin.H{"message": "?"})
+	ctx, cancel := context.WithTimeout(context.Background(), OverTime)
+	for {
+		select {
+		case <-ctx.Done():
+			// 获取数据超时了
+			cancel()
+			return
+		default:
+			data := client.Data[Action]
+			//fmt.Println("正常中")
+			if data != "" {
+				cancel()
+				//这里设置为空是为了清除上次的结果并且赋值判断
+				client.Data[Action] = ""
+				c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, Action: data})
+			} else {
+				time.Sleep(time.Millisecond * 500)
+			}
+		}
 	}
 
 }
 
-// ClientConnectionList provides get client connect list for a job
-// you can use it see all Connection
-func ClientConnectionList(c *gin.Context) {
+func getList(c *gin.Context) {
 	resList := "hliang:\r\n"
 	hlSyncMap.Range(func(key, value interface{}) bool {
 		resList += key.(string) + "\r\n\t"
+
 		return true
 	})
 	c.String(200, resList)
@@ -190,14 +174,15 @@ func TlsHandler() gin.HandlerFunc {
 }
 
 func main() {
-	//设置获取数据的超时时间30秒
 	r := gin.Default()
-	r.GET("/result", ResultSet)
+	r.GET("/", Index)
+	r.GET("/go", ResultSet)
 	r.GET("/ws", ws)
-	r.GET("/list", ClientConnectionList)
-	r.Use(TlsHandler())
-	_ = r.Run(LocalPort)
-	//_ = r.RunTLS(sslPort, "zhengshu.pem", "zhengshu.key")
-	r.Run(BasicPort)
-	//r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
+	r.GET("/list", getList)
+	_ = r.Run(BasicPort)
+
+	//编译https版放开下面两行注释代码 并且把上一行注释
+	//r.Use(TlsHandler())
+	//_ = r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
+
 }
