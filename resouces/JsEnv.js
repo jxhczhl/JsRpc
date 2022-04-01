@@ -47,6 +47,7 @@ Hlclient.prototype.regAction = function (func_name, func) {
     this.handlers[func_name] = func;
 
 }
+//收到消息后这里处理，
 Hlclient.prototype.handlerRequest = function (requestJson) {
 	var _this = this;
 	var result=JSON.parse(requestJson);
@@ -57,7 +58,7 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
 }
     action=result["action"]
     var theHandler = this.handlers[action];
-    if (!theHandler ||theHandler==undefined){
+    if (!theHandler){
 	    this.sendResult(action,'action not found');
 	    return
     }
@@ -67,11 +68,17 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
 				_this.sendResult(action, response);
 			})
 		}else{
+
+            try {
+                result["param"]=JSON.parse(result["param"])
+            }catch (e){
+                console.log("")
+            }
 			theHandler(function (response) {
 				_this.sendResult(action, response);
 			},result["param"])
 		}
-		
+
     } catch (e) {
         console.log("error: " + e);
         _this.sendResult(action+e);
