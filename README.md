@@ -1,15 +1,32 @@
-# JsRPC-hliang
+# JsRPC
+##### 黑脸怪-hliang
 
 -- js逆向之远程调用(rpc)免去抠代码补环境
 
 > tip:懒得自己编译的 ，[releases](https://github.com/jxhczhl/JsRpc/releases)中有已经编译好的包 （win和Linux的都有~）
 
-## 目录结构
 
+
+- [JsRPC-hliang](#jsrpc-hliang)
+  - [目录结构](#目录结构)
+  - [基本介绍](#基本介绍)
+  - [实现](#实现)
+  - [食用方法](#食用方法)
+    - [打开编译好的文件，开启服务](#打开编译好的文件开启服务)
+    - [注入JS，构建通信环境](#注入js构建通信环境)
+    - [注入ws与方法](#注入ws与方法)
+        - [远程调用1：无参获取值](#远程调用1无参获取值)
+        - [远程调用2：带参获取值](#远程调用2带参获取值)
+        - [远程调用3：带多个参获 并且使用post方式 取值](#远程调用3带多个参获-并且使用post方式-取值)
+  - [食用案例-爱锭网15题](#食用案例-爱锭网15题)
+  - [TODO](#todo)
 ```dart
 -- main.go (服务器的主代码)
 -- resouces/JsEnv.js (客户端注入js环境)
 ```
+
+
+## 目录结构
 
 ## 基本介绍
 
@@ -34,57 +51,91 @@
 ### 打开编译好的文件，开启服务
 
 如下图所示
+![image](https://user-images.githubusercontent.com/41224971/161306799-57f009dc-5448-402f-ab4d-ee5c6c969c91.png)
 
-![image](https://user-images.githubusercontent.com/41224971/134774461-1b502f9f-f58d-4fd8-9a8e-9ac402ef9b60.png)
 
 **api 简介**
 
 - `/list` :查看当前连接的ws服务
 - `/ws`  :浏览器注入ws连接的接口
-- `/result` :获取数据的接口  (数据格式json: {"group":"hhh","hello":"好困啊yes","name":"baidu","status":"200"} )
+- `/go` :获取数据的接口  (可以get和post)
 
 
-说明：接口用?group和name来区分 如 ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便
-http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数
+说明：接口用?group和name来区分任务 如 ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便起名，必填选项
+http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 
+group和name填写上面注入时候的，action是注册的方法名,param是可选的参数 接口参数暂定为这几个，但是param还可以传stringify过的json(字符串) 下面会介绍
 
 ### 注入JS，构建通信环境
 
 打开JsEnv 复制粘贴到网站控制台(注意有时要放开断点)
 
-![image](https://user-images.githubusercontent.com/41224971/134774597-5c8c845b-072e-40d1-bdf7-24e89f78b22e.png)
+![image](https://user-images.githubusercontent.com/41224971/161307187-1265ec7c-fe64-45d7-b255-5472e0f25802.png)
 
 ### 注入ws与方法
 
+
 ```js
-// 连接通信
-var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=hhh&name=baidu");
+// 注入环境后连接通信
+var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&name=hlg");
+```
+
+##### 远程调用1：无参获取值
+
+```js
+
 // 注册一个方法 第一个参数hello为方法名，
 // 第二个参数为函数，resolve里面的值是想要的值(发送到服务器的)
-// param是可传参参数，可以忽略
-demo.regAction("hello", function (resolve, param) {
-    var c = "好困啊" + param;
-    resolve(c);
+demo.regAction("hello", function (resolve) {
+    //这样每次调用就会返回“好困啊+随机整数”
+    var Js_sjz = "好困啊"+parseInt(Math.random()*1000);
+    resolve(Js_sjz);
 })
 ```
+    访问接口，获得js端的返回值
+    http://localhost:12080/go?group=zzz&name=hlg&action=hello
 
-![image](https://user-images.githubusercontent.com/41224971/134774859-a4594f23-b828-4538-8b89-9d96813f7d1e.png)
+![image](https://user-images.githubusercontent.com/41224971/161309382-81a9a9cc-65f7-4531-a1e6-a892dfe1facd.png)
 
-### 访问接口，获得数据
-
-```dart
-http://127.0.0.1:12080/go?group=hhh&name=baidu&action=hello&param=yes
-// 其中 hello是会变的 是action名字。 用代码访问的时候要注意这个名字
-{
-  "group":"hhh",
-  "hello":"好困啊yes",
-  "name":"baidu",
-  "status":"200"
-}
+##### 远程调用2：带参获取值
+```js
+//写一个传入字符串，返回base64值的接口(调用内置函数btoa)
+demo.regAction("hello2", function (resolve,param) {
+    //这样添加了一个param参数，http接口带上它，这里就能获得
+    var base666 = btoa(param)
+    resolve(base666);
+})
 ```
+    访问接口，获得js端的返回值
+![image](https://user-images.githubusercontent.com/41224971/161311297-6731c089-3de2-44ed-80b9-21a03746a52c.png)
 
-![image](https://user-images.githubusercontent.com/41224971/134775037-167724d4-ae94-4fcf-88c4-d881621b712c.png)
 
+##### 远程调用3：带多个参获 并且使用post方式 取值
+```js
+//假设有一个函数 需要传递两个参数
+function hlg(User,Status){
+    return User+"说："+Status;
+}
 
+demo.regAction("hello3", function (resolve,param) {
+    //这里还是param参数 param里面的key 是先这里写，但到时候传接口就必须对应的上
+    res=hlg(param["user"],param["status"])
+    resolve(res);
+})
+```
+   访问接口，获得js端的返回值
+```python
+url = "http://localhost:12080/go"
+data = {
+    "group": "zzz",
+    "name": "hlg",
+    "action": "hello3",
+    "param": json.dumps({"user":"黑脸怪","status":"好困啊"})
+}
+print(data["param"]) #dumps后就是长这样的字符串{"user": "\u9ed1\u8138\u602a", "status": "\u597d\u56f0\u554a"}
+res=requests.post(url, data=data) #这里换get也是可以的
+print(res.text)
+```
+![image](https://user-images.githubusercontent.com/41224971/161313397-166cbda0-fe8b-4063-b815-376902d82f74.png)
 
 
 
