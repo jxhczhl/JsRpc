@@ -99,17 +99,18 @@ func QueryFunc(client *Clients, funcName string, param string) {
 }
 
 func ResultSet(c *gin.Context) {
-	var getGroup, getName, Action, getParam string
+	var getGroup, getName, Action, Param, zType string
 
 	//获取参数
-	getGroup, getName, Action, getParam = c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param")
+	getGroup, getName, Action, Param, zType = c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param"), c.Query("Type")
 	//如果获取不到 说明是post提交的
 	if getGroup == "" && getName == "" {
 		//切换post获取方式
-		getGroup, getName, Action, getParam = c.PostForm("group"), c.PostForm("name"), c.PostForm("action"), c.PostForm("param")
+		getGroup, getName, Action, Param, zType = c.PostForm("group"), c.PostForm("name"), c.PostForm("action"), c.PostForm("param"), c.PostForm("type")
 	}
-
-	Param := strings.Replace(getParam, "\"", "\\\"", -1)
+	if zType == "" {
+		Param = strings.Replace(Param, "\"", "\\\"", -1)
+	}
 	if getGroup == "" || getName == "" {
 		c.String(200, "input group and name")
 		return
@@ -145,7 +146,7 @@ func ResultSet(c *gin.Context) {
 				cancel()
 				//这里设置为空是为了清除上次的结果并且赋值判断
 				client.Data[Action] = ""
-				c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, Action: data})
+				c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": data})
 			} else {
 				time.Sleep(time.Millisecond * 500)
 			}
@@ -190,10 +191,10 @@ func main() {
 	r.POST("/go", ResultSet)
 	r.GET("/ws", ws)
 	r.GET("/list", getList)
-	_ = r.Run(BasicPort)
+	//_ = r.Run(BasicPort)
 
 	//编译https版放开下面两行注释代码 并且把上一行注释
-	//r.Use(TlsHandler())
-	//_ = r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
+	r.Use(TlsHandler())
+	_ = r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
 
 }

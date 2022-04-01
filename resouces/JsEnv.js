@@ -45,6 +45,7 @@ Hlclient.prototype.regAction = function (func_name, func) {
     }
     console.log("register func_name: " + func_name);
     this.handlers[func_name] = func;
+    return true
 
 }
 //收到消息后这里处理，
