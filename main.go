@@ -99,7 +99,17 @@ func QueryFunc(client *Clients, funcName string, param string) {
 }
 
 func ResultSet(c *gin.Context) {
-	getGroup, getName, Action, getParam := c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param")
+	var getGroup, getName, Action, getParam string
+
+	//获取参数
+	getGroup, getName, Action, getParam = c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param")
+	//如果获取不到 说明是post提交的
+	if getGroup == "" && getName == "" {
+		//切换post获取方式
+		getGroup, getName, Action, getParam = c.PostForm("group"), c.PostForm("name"), c.PostForm("action"), c.PostForm("param")
+	}
+
+	Param := strings.Replace(getParam, "\"", "\\\"", -1)
 	if getGroup == "" || getName == "" {
 		c.String(200, "input group and name")
 		return
@@ -119,7 +129,7 @@ func ResultSet(c *gin.Context) {
 		return
 	}
 	//发送数据到web里得到结果
-	QueryFunc(client, Action, getParam)
+	QueryFunc(client, Action, Param)
 
 	ctx, cancel := context.WithTimeout(context.Background(), OverTime)
 	for {
@@ -177,6 +187,7 @@ func main() {
 	r := gin.Default()
 	r.GET("/", Index)
 	r.GET("/go", ResultSet)
+	r.POST("/go", ResultSet)
 	r.GET("/ws", ws)
 	r.GET("/list", getList)
 	_ = r.Run(BasicPort)
