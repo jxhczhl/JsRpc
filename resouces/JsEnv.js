@@ -11,7 +11,6 @@ function Hlclient(wsURL) {
         if (!res){
             resolve("没有返回值")
         }else{
-            console.log("不空")
             resolve(res)
         }
 
@@ -24,11 +23,9 @@ Hlclient.prototype.connect = function () {
     try {
         this.socket["ySocket"] = new WebSocket(this.wsURL);
         this.socket["ySocket"].onmessage = function (e) {
-            console.log("message");
             try{
                 let blob=e.data
                 blob.text().then(data =>{
-                    // console.log("blob",blob,data)
                     _this.handlerRequest(data);
                 })
             }catch{
@@ -84,14 +81,12 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
         return
     }
     try {
-        console.log(result)
         if (!result["param"]){
             theHandler(function (response) {
                 _this.sendResult(action, response);
             })
         }else{
             var param=result["param"]
-            console.log(param)
             try {
                 param=JSON.parse(param)
             }catch (e){
