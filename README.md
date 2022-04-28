@@ -7,18 +7,23 @@
 
 
 
-- [JsRPC-hliang](#jsrpc-hliang)
+- [JsRPC](#jsrpc)
+        - [黑脸怪-hliang](#黑脸怪-hliang)
   - [目录结构](#目录结构)
   - [基本介绍](#基本介绍)
   - [实现](#实现)
   - [食用方法](#食用方法)
     - [打开编译好的文件，开启服务](#打开编译好的文件开启服务)
     - [注入JS，构建通信环境](#注入js构建通信环境)
-    - [注入ws与方法](#注入ws与方法)
+    - [连接通信](#连接通信)
+      - [I 远程调用0：](#i-远程调用0)
+        - [接口传js代码让浏览器执行](#接口传js代码让浏览器执行)
+      - [Ⅱ 远程调用1： 浏览器预先注册js方法 传递函数名调用](#ⅱ-远程调用1-浏览器预先注册js方法-传递函数名调用)
         - [远程调用1：无参获取值](#远程调用1无参获取值)
         - [远程调用2：带参获取值](#远程调用2带参获取值)
         - [远程调用3：带多个参获 并且使用post方式 取值](#远程调用3带多个参获-并且使用post方式-取值)
-  - [食用案例-爱锭网15题](#食用案例-爱锭网15题)
+  - [食用案例-爬虫练手-xx网第15题](#食用案例-爬虫练手-xx网第15题)
+  - [其他案例](#其他案例)
   - [TODO](#todo)
 
 
@@ -57,29 +62,56 @@
 
 **api 简介**
 
-- `/list` :查看当前连接的ws服务
-- `/ws`  :浏览器注入ws连接的接口
-- `/go` :获取数据的接口  (可以get和post)
+- `/list` :查看当前连接的ws服务  (get)
+- `/ws`  :浏览器注入ws连接的接口 (ws | wss)
+- `/go` :获取数据的接口  (get | post)
+- `/execjs` :传递jscode给浏览器执行 (get | post)
 
 
-说明：接口用?group和name来区分任务 如 ws://127.0.0.1:12080/ws?group={}&name={}" //注入ws的例子 group和name都可以随便起名，必填选项
+说明：接口用?group和name来区分任务 如 ws://127.0.0.1:12080/ws?group={}&name={}"  
+  //注入ws的例子 group和name都可以随便起名(必填)
 http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口 
 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数 接口参数暂定为这几个，但是param还可以传stringify过的json(字符串) 下面会介绍
 
 ### 注入JS，构建通信环境
 
-打开JsEnv 复制粘贴到网站控制台(注意有时要放开断点)
+打开JsEnv 复制粘贴到网站控制台(注意：可以在浏览器开启的时候就先注入环境，不然要放开调试断点才能注入)
 
 ![image](https://user-images.githubusercontent.com/41224971/161307187-1265ec7c-fe64-45d7-b255-5472e0f25802.png)
 
-### 注入ws与方法
-
-
+### 连接通信
 ```js
 // 注入环境后连接通信
 var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&name=hlg");
 ```
+#### I 远程调用0：
+##### 接口传js代码让浏览器执行
+浏览器已经连接上通信后 调用execjs接口就行
 
+
+```python
+import requests
+
+jscode = """
+(function(){
+    console.log("test")
+    return "执行成功"
+})()
+"""
+
+url = "http://localhost:12080/execjs"
+data = {
+    "group": "zzz",
+    "name": "hlg",
+    "jscode":jscode
+}
+res = requests.post(url, data=data)
+print(res.text)
+```
+![image](https://user-images.githubusercontent.com/41224971/165704850-0a22dd7e-68ea-44fe-bda9-608c10795558.png)
+
+
+#### Ⅱ 远程调用1： 浏览器预先注册js方法 传递函数名调用 
 ##### 远程调用1：无参获取值
 
 ```js
@@ -139,8 +171,7 @@ print(res.text)
 ![image](https://user-images.githubusercontent.com/41224971/161313397-166cbda0-fe8b-4063-b815-376902d82f74.png)
 
 
-
-## 食用案例-爱锭网15题
+## 食用案例-爬虫练手-xx网第15题
 
     本题解是把它ajax获取数据那一个函数都复制下来，然后控制台调用这样子~
 
@@ -159,6 +190,15 @@ print(res.text)
 ![image](https://user-images.githubusercontent.com/41224971/134799668-3dd385e7-f44c-4fb3-85ff-00d78c674865.png)
 
     控制台可以关，但是注入的网页不要关哦
+
+## 其他案例
+    1. JsRpc实战-猿人学-反混淆刷题平台第20题（wasm）
+        https://mp.weixin.qq.com/s/DemSz2NRkYt9YL5fSUiMDQ
+    2. 网洛者-反反爬练习平台第七题（JSVMPZL - 初体验）
+        https://mp.weixin.qq.com/s/nvQNV33QkzFQtFscDqnXWw
+
+![image](https://user-images.githubusercontent.com/41224971/165717648-8763d592-b380-4a5c-9a97-accee032e493.png)
+
 
 ## TODO
 
