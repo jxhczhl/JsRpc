@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -35,7 +36,12 @@ type Clients struct {
 	clientWs    *websocket.Conn
 }
 
-// NewClients initializes a new Clients instance
+type Message struct {
+	Action string `json:"action"`
+	Param  string `json:"param"`
+}
+
+// NewClient  initializes a new Clients instance
 func NewClient(group string, name string, ws *websocket.Conn) *Clients {
 	return &Clients{
 		clientGroup: group,
@@ -79,19 +85,30 @@ func ws(c *gin.Context) {
 	}
 	defer func(ws *websocket.Conn) {
 		_ = ws.Close()
+		hlSyncMap.Range(func(key, value interface{}) bool {
+			client, _ := value.(*Clients)
+			if key == client.clientGroup+"->"+client.clientName {
+				hlSyncMap.Delete(key)
+				return true
+			}
+			return false
+		})
 	}(ws)
-
 }
 
 func QueryFunc(client *Clients, funcName string, param string) {
-	var WriteDate string
+	WriteDate := Message{}
+	WriteDate.Action = funcName
 	if param == "" {
-		WriteDate = "{\"action\":\"" + funcName + "\"}"
+		//WriteDate = "{\"action\":\"" + funcName + "\"}"
+		WriteDate.Param = ""
 	} else {
-		WriteDate = "{\"action\":\"" + funcName + "\",\"param\":\"" + param + "\"}"
+		//WriteDate = "{\"action\":\"" + funcName + "\",\"param\":\"" + param + "\"}"
+		WriteDate.Param = param
 	}
+	data, _ := json.Marshal(WriteDate)
 	ws := client.clientWs
-	err := ws.WriteMessage(1, []byte(WriteDate))
+	err := ws.WriteMessage(2, data)
 	if err != nil {
 		fmt.Println(err, "写入数据失败")
 	}
@@ -99,18 +116,18 @@ func QueryFunc(client *Clients, funcName string, param string) {
 }
 
 func ResultSet(c *gin.Context) {
-	var getGroup, getName, Action, Param, zType string
+	var getGroup, getName, Action, Param string
 
 	//获取参数
-	getGroup, getName, Action, Param, zType = c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param"), c.Query("Type")
+	getGroup, getName, Action, Param = c.Query("group"), c.Query("name"), c.Query("action"), c.Query("param")
 	//如果获取不到 说明是post提交的
 	if getGroup == "" && getName == "" {
 		//切换post获取方式
-		getGroup, getName, Action, Param, zType = c.PostForm("group"), c.PostForm("name"), c.PostForm("action"), c.PostForm("param"), c.PostForm("type")
+		getGroup, getName, Action, Param = c.PostForm("group"), c.PostForm("name"), c.PostForm("action"), c.PostForm("param")
 	}
-	if zType == "" {
-		Param = strings.Replace(Param, "\"", "\\\"", -1)
-	}
+	//if zType == "" {
+	//	Param = strings.Replace(Param, "\"", "\\\"", -1)
+	//}
 	if getGroup == "" || getName == "" {
 		c.String(200, "input group and name")
 		return
@@ -155,8 +172,59 @@ func ResultSet(c *gin.Context) {
 
 }
 
+func Execjs(c *gin.Context) {
+	var getGroup, getName, JsCode string
+	Action := "_execjs"
+	//获取参数
+	getGroup, getName, JsCode = c.Query("group"), c.Query("name"), c.Query("jscode")
+	//如果获取不到 说明是post提交的
+	if getGroup == "" && getName == "" {
+		//切换post获取方式
+		getGroup, getName, JsCode = c.PostForm("group"), c.PostForm("name"), c.PostForm("jscode")
+	}
+	if getGroup == "" || getName == "" {
+		c.String(200, "input group and name")
+		return
+	}
+	fmt.Println(getGroup, getName, JsCode)
+	clientName, ok := hlSyncMap.Load(getGroup + "->" + getName)
+	if ok == false {
+		c.String(200, "注入了ws？没有找到组和名字")
+		return
+	}
+	//取一个ws客户端
+	client, ko := clientName.(*Clients)
+	if !ko {
+		return
+	}
+	//发送数据到web里得到结果
+
+	QueryFunc(client, Action, JsCode)
+	ctx, cancel := context.WithTimeout(context.Background(), OverTime)
+	for {
+		select {
+		case <-ctx.Done():
+			// 获取数据超时了
+			cancel()
+			return
+		default:
+			data := client.Data[Action]
+			//fmt.Println("正常中")
+			if data != "" {
+				cancel()
+				//这里设置为空是为了清除上次的结果并且赋值判断
+				client.Data[Action] = ""
+				c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": data})
+			} else {
+				time.Sleep(time.Millisecond * 500)
+			}
+		}
+	}
+
+}
+
 func getList(c *gin.Context) {
-	resList := "hliang:\r\n"
+	resList := "黑脸怪:\r\n\t"
 	hlSyncMap.Range(func(key, value interface{}) bool {
 		resList += key.(string) + "\r\n\t"
 
@@ -185,16 +253,20 @@ func TlsHandler() gin.HandlerFunc {
 }
 
 func main() {
+	//gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET("/", Index)
 	r.GET("/go", ResultSet)
 	r.POST("/go", ResultSet)
 	r.GET("/ws", ws)
+	r.GET("/execjs", Execjs)
+	r.POST("/execjs", Execjs)
 	r.GET("/list", getList)
-	//_ = r.Run(BasicPort)
-
-	//编译https版放开下面两行注释代码 并且把上一行注释
 	r.Use(TlsHandler())
-	_ = r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
+
+	_ = r.Run(BasicPort)
+
+	//编译https版放开下面这行注释代码 并且把上一行注释
+	//_ = r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
 
 }

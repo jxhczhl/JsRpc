@@ -2,11 +2,20 @@ function Hlclient(wsURL) {
     this.wsURL = wsURL;
     this.handlers = {};
     this.socket = {};
-
     if (!wsURL) {
         throw new Error('wsURL can not be empty!!')
     }
     this.connect()
+    this.handlers["_execjs"]=function (resolve,param){
+        var res=eval(param)
+        if (!res){
+            resolve("没有返回值")
+        }else{
+            console.log("不空")
+            resolve(res)
+        }
+
+    }
 }
 
 Hlclient.prototype.connect = function () {
@@ -15,8 +24,18 @@ Hlclient.prototype.connect = function () {
     try {
         this.socket["ySocket"] = new WebSocket(this.wsURL);
         this.socket["ySocket"].onmessage = function (e) {
-            console.log("send func", e.data);
-            _this.handlerRequest(e.data);
+            console.log("message");
+            try{
+                let blob=e.data
+                blob.text().then(data =>{
+                    // console.log("blob",blob,data)
+                    _this.handlerRequest(data);
+                })
+            }catch{
+                console.log("not blob")
+                _this.handlerRequest(blob)
+            }
+
         }
     } catch (e) {
         console.log("connection failed,reconnect after 10s");
@@ -48,37 +67,40 @@ Hlclient.prototype.regAction = function (func_name, func) {
     return true
 
 }
+
 //收到消息后这里处理，
 Hlclient.prototype.handlerRequest = function (requestJson) {
-	var _this = this;
-	var result=JSON.parse(requestJson);
-	//console.log(result)
-	if (!result['action']) {
+    var _this = this;
+    var result=JSON.parse(requestJson);
+    //console.log(result)
+    if (!result['action']) {
         this.sendResult('','need request param {action}');
         return
-}
+    }
     var action=result["action"]
     var theHandler = this.handlers[action];
     if (!theHandler){
-	    this.sendResult(action,'action not found');
-	    return
+        this.sendResult(action,'action not found');
+        return
     }
     try {
-		if (!result["param"]){
-			theHandler(function (response) {
-				_this.sendResult(action, response);
-			})
-		}else{
-
+        console.log(result)
+        if (!result["param"]){
+            theHandler(function (response) {
+                _this.sendResult(action, response);
+            })
+        }else{
+            var param=result["param"]
+            console.log(param)
             try {
-                result["param"]=JSON.parse(result["param"])
+                param=JSON.parse(param)
             }catch (e){
                 console.log("")
             }
-			theHandler(function (response) {
-				_this.sendResult(action, response);
-			},result["param"])
-		}
+            theHandler(function (response) {
+                _this.sendResult(action, response);
+            },param)
+        }
 
     } catch (e) {
         console.log("error: " + e);
