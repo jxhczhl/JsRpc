@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -24,10 +22,8 @@ var (
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	hlSyncMap sync.Map
-	gm = &sync.Mutex{}
-	gchan = make(chan string)
-	// OverTime 设置接口没得到结果时的超时时间
-	OverTime = time.Second * 30
+	gm        = &sync.Mutex{}
+	gchan     = make(chan string)
 )
 
 type Clients struct {
@@ -98,26 +94,7 @@ func ws(c *gin.Context) {
 	}(ws)
 }
 
-func QueryFunc(client *Clients, funcName string, param string) {
-	WriteDate := Message{}
-	WriteDate.Action = funcName
-	if param == "" {
-		//WriteDate = "{\"action\":\"" + funcName + "\"}"
-		WriteDate.Param = ""
-	} else {
-		//WriteDate = "{\"action\":\"" + funcName + "\",\"param\":\"" + param + "\"}"
-		WriteDate.Param = param
-	}
-	data, _ := json.Marshal(WriteDate)
-	ws := client.clientWs
-	err := ws.WriteMessage(2, data)
-	if err != nil {
-		fmt.Println(err, "写入数据失败")
-	}
-
-}
-
-func GQueryFunc(client *Clients, funcName string, param string, resChan chan <- string) {
+func GQueryFunc(client *Clients, funcName string, param string, resChan chan<- string) {
 	WriteDate := Message{}
 	WriteDate.Action = funcName
 	if param == "" {
@@ -135,7 +112,7 @@ func GQueryFunc(client *Clients, funcName string, param string, resChan chan <- 
 	if err != nil {
 		fmt.Println(err, "写入数据失败")
 	}
-	res := <- gchan
+	res := <-gchan
 	fmt.Printf("res: %v\n", res)
 	resChan <- res
 }
@@ -150,9 +127,7 @@ func ResultSet(c *gin.Context) {
 		//切换post获取方式
 		getGroup, getName, Action, Param = c.PostForm("group"), c.PostForm("name"), c.PostForm("action"), c.PostForm("param")
 	}
-	//if zType == "" {
-	//	Param = strings.Replace(Param, "\"", "\\\"", -1)
-	//}
+
 	if getGroup == "" || getName == "" {
 		c.String(200, "input group and name")
 		return
@@ -171,32 +146,10 @@ func ResultSet(c *gin.Context) {
 	if !ko {
 		return
 	}
-	//发送数据到web里得到结果
-	// QueryFunc(client, Action, Param)
-
-	// ctx, cancel := context.WithTimeout(context.Background(), OverTime)
-	// for {
-	// 	select {
-	// 	case <-ctx.Done():
-	// 		// 获取数据超时了
-	// 		cancel()
-	// 		return
-	// 	default:
-	// 		data := client.Data[Action]
-	// 		//fmt.Println("正常中")
-	// 		if data != "" {
-	// 			cancel()
-	// 			//这里设置为空是为了清除上次的结果并且赋值判断
-	// 			client.Data[Action] = ""
-	// 			c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": data})
-	// 		} else {
-	// 			time.Sleep(time.Millisecond * 500)
-	// 		}
-	// 	}
-	// }
 
 	c2 := make(chan string)
-	go GQueryFunc(client, Action, Param,c2)
+	go GQueryFunc(client, Action, Param, c2)
+	//把管道传过去，获得值就返回了
 	c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": <-c2})
 
 }
@@ -226,29 +179,10 @@ func Execjs(c *gin.Context) {
 	if !ko {
 		return
 	}
-	//发送数据到web里得到结果
 
-	QueryFunc(client, Action, JsCode)
-	ctx, cancel := context.WithTimeout(context.Background(), OverTime)
-	for {
-		select {
-		case <-ctx.Done():
-			// 获取数据超时了
-			cancel()
-			return
-		default:
-			data := client.Data[Action]
-			//fmt.Println("正常中")
-			if data != "" {
-				cancel()
-				//这里设置为空是为了清除上次的结果并且赋值判断
-				client.Data[Action] = ""
-				c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": data})
-			} else {
-				time.Sleep(time.Millisecond * 500)
-			}
-		}
-	}
+	c2 := make(chan string)
+	go GQueryFunc(client, Action, JsCode, c2)
+	c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": <-c2})
 
 }
 
@@ -256,7 +190,6 @@ func getList(c *gin.Context) {
 	resList := "黑脸怪:\r\n\t"
 	hlSyncMap.Range(func(key, value interface{}) bool {
 		resList += key.(string) + "\r\n\t"
-
 		return true
 	})
 	c.String(200, resList)
