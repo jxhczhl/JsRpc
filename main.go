@@ -24,7 +24,8 @@ var (
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	hlSyncMap sync.Map
-
+	gm = &sync.Mutex{}
+	gchan = make(chan string)
 	// OverTime 设置接口没得到结果时的超时时间
 	OverTime = time.Second * 30
 )
@@ -77,6 +78,7 @@ func ws(c *gin.Context) {
 			action := msg[:strIndex]
 			client.Data[action] = msg[strIndex+5:]
 			fmt.Println("get_message:", client.Data[action])
+			gchan <- msg[strIndex+5:]
 			hlSyncMap.Store(group+"->"+name, client)
 		} else {
 			fmt.Println(msg, "message error")
@@ -115,6 +117,29 @@ func QueryFunc(client *Clients, funcName string, param string) {
 
 }
 
+func GQueryFunc(client *Clients, funcName string, param string, resChan chan <- string) {
+	WriteDate := Message{}
+	WriteDate.Action = funcName
+	if param == "" {
+		//WriteDate = "{\"action\":\"" + funcName + "\"}"
+		WriteDate.Param = ""
+	} else {
+		//WriteDate = "{\"action\":\"" + funcName + "\",\"param\":\"" + param + "\"}"
+		WriteDate.Param = param
+	}
+	data, _ := json.Marshal(WriteDate)
+	ws := client.clientWs
+	gm.Lock()
+	err := ws.WriteMessage(2, data)
+	gm.Unlock()
+	if err != nil {
+		fmt.Println(err, "写入数据失败")
+	}
+	res := <- gchan
+	fmt.Printf("res: %v\n", res)
+	resChan <- res
+}
+
 func ResultSet(c *gin.Context) {
 	var getGroup, getName, Action, Param string
 
@@ -147,28 +172,32 @@ func ResultSet(c *gin.Context) {
 		return
 	}
 	//发送数据到web里得到结果
-	QueryFunc(client, Action, Param)
+	// QueryFunc(client, Action, Param)
 
-	ctx, cancel := context.WithTimeout(context.Background(), OverTime)
-	for {
-		select {
-		case <-ctx.Done():
-			// 获取数据超时了
-			cancel()
-			return
-		default:
-			data := client.Data[Action]
-			//fmt.Println("正常中")
-			if data != "" {
-				cancel()
-				//这里设置为空是为了清除上次的结果并且赋值判断
-				client.Data[Action] = ""
-				c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": data})
-			} else {
-				time.Sleep(time.Millisecond * 500)
-			}
-		}
-	}
+	// ctx, cancel := context.WithTimeout(context.Background(), OverTime)
+	// for {
+	// 	select {
+	// 	case <-ctx.Done():
+	// 		// 获取数据超时了
+	// 		cancel()
+	// 		return
+	// 	default:
+	// 		data := client.Data[Action]
+	// 		//fmt.Println("正常中")
+	// 		if data != "" {
+	// 			cancel()
+	// 			//这里设置为空是为了清除上次的结果并且赋值判断
+	// 			client.Data[Action] = ""
+	// 			c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": data})
+	// 		} else {
+	// 			time.Sleep(time.Millisecond * 500)
+	// 		}
+	// 	}
+	// }
+
+	c2 := make(chan string)
+	go GQueryFunc(client, Action, Param,c2)
+	c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientName, "data": <-c2})
 
 }
 
