@@ -197,6 +197,8 @@ print(res.text)
 
 1.修复ResultSet函数，在并发处理环境下存在数据丢失，响应延迟等问题。
 
+2.handlerRequest携带部分param参数调用存在JSON反序列化错误，可以使用JsEnv_Dev.js去处理
+
 ## 其他案例
 
     1. JsRpc实战-猿人学-反混淆刷题平台第20题（wasm）
