@@ -83,13 +83,13 @@ func ws(c *gin.Context) {
 	}
 	defer func(ws *websocket.Conn) {
 		_ = ws.Close()
+		fmt.Println(group+"->"+name, "下线了")
 		hlSyncMap.Range(func(key, value interface{}) bool {
-			client, _ := value.(*Clients)
-			if key == client.clientGroup+"->"+client.clientName {
+			//client, _ := value.(*Clients)
+			if key == group+"->"+name {
 				hlSyncMap.Delete(key)
-				return true
 			}
-			return false
+			return true
 		})
 	}(ws)
 }
@@ -98,10 +98,8 @@ func GQueryFunc(client *Clients, funcName string, param string, resChan chan<- s
 	WriteDate := Message{}
 	WriteDate.Action = funcName
 	if param == "" {
-		//WriteDate = "{\"action\":\"" + funcName + "\"}"
 		WriteDate.Param = ""
 	} else {
-		//WriteDate = "{\"action\":\"" + funcName + "\",\"param\":\"" + param + "\"}"
 		WriteDate.Param = param
 	}
 	data, _ := json.Marshal(WriteDate)
