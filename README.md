@@ -206,7 +206,8 @@ print(res.text)
     2. 网洛者-反反爬练习平台第七题（JSVMPZL - 初体验）
         https://mp.weixin.qq.com/s/nvQNV33QkzFQtFscDqnXWw
 
-![image](https://user-images.githubusercontent.com/41224971/165717648-8763d592-b380-4a5c-9a97-accee032e493.png)
+![image](https://user-images.githubusercontent.com/41224971/189143924-4e972b98-ae09-429d-8224-eecf425bee72.png)
+
 
 ## TODO
 
