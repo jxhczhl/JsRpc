@@ -42,16 +42,15 @@
 
 > 说明：本方法可以https证书且支持wss
 
-在https的网站想要新建WebSocket连接如果是连接到普通的ws可能会报安全错误，好像连接本地(127.0.0.1)不会报错~ 可以用本地和wss 你自己看着玩
+在https的网站想要新建WebSocket连接如果是连接到普通的ws会报安全错误，连接本地(127.0.0.1)不会报错~ 可以用本地和wss 你自己看着玩
 
-1. 无https证书者。直接编译main.go 我试了一下，发现使用本地ip(127.0.0.1)可以在https的网站直接连接ws使用 默认端口12080
+1. 无https证书者。直接编译main.go 使用本地ip(127.0.0.1)可以在https的网站直接连接ws使用 默认端口12080
 2. 有https证书者。修改main.go文件 把r.Run()注释掉，把r.RunTls注释取消掉 并且参数设置证书的路径 直接输入名字就是当前路径 默认端口：12443
 
-> 另外的题外话，有域名没证书不会搞的 或者有域名有公网(非固定IP的)都可以搞成的，自己研究研究
 
 ## 食用方法
 
-### 打开编译好的文件，开启服务
+### 打开编译好的文件，开启服务(releases下载)
 
 如下图所示
 ![image](https://user-images.githubusercontent.com/41224971/161306799-57f009dc-5448-402f-ab4d-ee5c6c969c91.png)
@@ -68,7 +67,7 @@
 http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口
 group和name填写上面注入时候的，action是注册的方法名,param是可选的参数 接口参数暂定为这几个，但是param还可以传stringify过的json(字符串) 下面会介绍
 
-### 注入JS，构建通信环境
+### 注入JS，构建通信环境（/resouces/JsEnv_Dev.js）
 
 打开JsEnv 复制粘贴到网站控制台(注意：可以在浏览器开启的时候就先注入环境，不然要放开调试断点才能注入)
 
@@ -206,7 +205,7 @@ print(res.text)
     2. 网洛者-反反爬练习平台第七题（JSVMPZL - 初体验）
         https://mp.weixin.qq.com/s/nvQNV33QkzFQtFscDqnXWw
 
-![image](https://user-images.githubusercontent.com/41224971/189143924-4e972b98-ae09-429d-8224-eecf425bee72.png)
+
 
 
 ## TODO
