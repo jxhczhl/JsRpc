@@ -1,35 +1,36 @@
 # JsRPC
 
-##### 黑脸怪-hliang
 
 -- js逆向之远程调用(rpc)免去抠代码补环境
 
-> tip:懒得自己编译的 ，[releases](https://github.com/jxhczhl/JsRpc/releases)中有已经编译好的包 （win和Linux的都有~）
-
-- [JsRPC](#jsrpc)
-  - [黑脸怪-hliang](#黑脸怪-hliang)
-  - [目录结构](#目录结构)
-  - [基本介绍](#基本介绍)
-  - [实现](#实现)
-  - [食用方法](#食用方法)
-    - [打开编译好的文件，开启服务](#打开编译好的文件开启服务)
-    - [注入JS，构建通信环境](#注入js构建通信环境)
-    - [连接通信](#连接通信)
-      - [I 远程调用0：](#i-远程调用0)
-        - [接口传js代码让浏览器执行](#接口传js代码让浏览器执行)
-      - [Ⅱ 远程调用1： 浏览器预先注册js方法 传递函数名调用](#ⅱ-远程调用1-浏览器预先注册js方法-传递函数名调用)
-        - [远程调用1：无参获取值](#远程调用1无参获取值)
-        - [远程调用2：带参获取值](#远程调用2带参获取值)
-        - [远程调用3：带多个参获 并且使用post方式 取值](#远程调用3带多个参获-并且使用post方式-取值)
-  - [食用案例-爬虫练手-xx网第15题](#食用案例-爬虫练手-xx网第15题)
-  - [其他案例](#其他案例)
-  - [TODO](#todo)
+> 黑脸怪
+<!-- TOC -->
+* [JsRPC](#jsrpc)
+  * [目录结构](#目录结构)
+  * [基本介绍](#基本介绍)
+  * [实现](#实现)
+  * [食用方法](#食用方法)
+    * [打开编译好的文件，开启服务(releases下载)](#打开编译好的文件开启服务releases下载)
+    * [注入JS，构建通信环境（/resouces/JsEnv_Dev.js）](#注入js构建通信环境resoucesjsenvdevjs)
+    * [连接通信](#连接通信)
+      * [I 远程调用0：](#i-远程调用0)
+        * [接口传js代码让浏览器执行](#接口传js代码让浏览器执行)
+      * [Ⅱ 远程调用1： 浏览器预先注册js方法 传递函数名调用](#ⅱ-远程调用1-浏览器预先注册js方法-传递函数名调用)
+        * [远程调用1：无参获取值](#远程调用1无参获取值)
+        * [远程调用2：带参获取值](#远程调用2带参获取值)
+        * [远程调用3：带多个参获 并且使用post方式 取值](#远程调用3带多个参获-并且使用post方式-取值)
+  * [食用案例-爬虫练手-xx网第15题](#食用案例-爬虫练手-xx网第15题)
+  * [BUG修复](#bug修复)
+  * [其他案例](#其他案例)
+  * [常见问题](#常见问题)
+  * [TODO](#todo)
+<!-- TOC -->
 
 ## 目录结构
 
 ```dart
 -- main.go (服务器的主代码)
--- resouces/JsEnv.js (客户端注入js环境)
+-- resouces/JsEnv_Dev.js (客户端注入js环境)
 ```
 
 ## 基本介绍
@@ -55,10 +56,14 @@
 如下图所示
 ![image](https://user-images.githubusercontent.com/41224971/161306799-57f009dc-5448-402f-ab4d-ee5c6c969c91.png)
 
+1.01版本默认不打印日志
+如需要打印日志，请用命令行启动（程序后面加个log） ".\rpc.exe log"
+
 **api 简介**
 
 - `/list` :查看当前连接的ws服务  (get)
 - `/ws`  :浏览器注入ws连接的接口 (ws | wss)
+- `/wst`  :ws测试使用-发啥回啥 (ws | wss)
 - `/go` :获取数据的接口  (get | post)
 - `/execjs` :传递jscode给浏览器执行 (get | post)
 
@@ -121,6 +126,16 @@ demo.regAction("hello", function (resolve) {
     var Js_sjz = "好困啊"+parseInt(Math.random()*1000);
     resolve(Js_sjz);
 })
+
+
+// 异步的代码注册：
+demo.regAction('token', async (resolve) => {
+  let token = await grecaptcha.execute(0, { action: '' }).then(function (token) {
+    return token
+  });
+  resolve(token);
+})
+
 ```
 
     访问接口，获得js端的返回值
@@ -196,7 +211,7 @@ print(res.text)
 
 1.修复ResultSet函数，在并发处理环境下存在数据丢失，响应延迟等问题。
 
-2.handlerRequest处理POST携带部分param参数调用存在JSON反序列化错误，可以使用JsEnv_Dev.js去处理
+[//]: # (2.handlerRequest处理POST携带部分param参数调用存在JSON反序列化错误，可以使用JsEnv_Dev.js去处理)
 
 ## 其他案例
 
@@ -205,7 +220,14 @@ print(res.text)
     2. 网洛者-反反爬练习平台第七题（JSVMPZL - 初体验）
         https://mp.weixin.qq.com/s/nvQNV33QkzFQtFscDqnXWw
 
+## 常见问题
 
+    1. websocket连接失败
+      内容安全策略（Content Security Policy）
+      Refused to connect to 'xx.xx' because it violates the following Content Security Policy directive: "connect-src 'self' 
+      这个网站不让连接websocket，好像可以用油猴注入使用，或者更改网页响应头
+    2. 异步操作获取值
+      [参考](https://github.com/jxhczhl/JsRpc/issues/12)
 
 
 ## TODO
