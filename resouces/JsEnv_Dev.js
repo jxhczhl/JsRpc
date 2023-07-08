@@ -1,20 +1,24 @@
 function Hlclient(wsURL) {
     this.wsURL = wsURL;
-    this.handlers = {};
+    this.handlers = {
+        _execjs: function (resolve, param) {
+            var res = eval(param)
+            if (!res) {
+                resolve("没有返回值")
+            } else {
+                resolve(res)
+            }
+
+        }
+    };
     this.socket = {};
     if (!wsURL) {
         throw new Error('wsURL can not be empty!!')
     }
     this.connect()
-    this.handlers["_execjs"]=function (resolve,param){
-        var res=eval(param)
-        if (!res){
-            resolve("没有返回值")
-        }else{
-            resolve(res)
-        }
-
-    }
+    this.socket["ySocket"].addEventListener('close', (event) => {
+        console.log('rpc已关闭');
+    });
 }
 
 Hlclient.prototype.connect = function () {
@@ -23,12 +27,12 @@ Hlclient.prototype.connect = function () {
     try {
         this.socket["ySocket"] = new WebSocket(this.wsURL);
         this.socket["ySocket"].onmessage = function (e) {
-            try{
-                let blob=e.data
-                blob.text().then(data =>{
+            try {
+                let blob = e.data
+                blob.text().then(data => {
                     _this.handlerRequest(data);
                 })
-            }catch{
+            } catch {
                 console.log("not blob")
                 _this.handlerRequest(blob)
             }
@@ -46,6 +50,12 @@ Hlclient.prototype.connect = function () {
             _this.connect()
         }, 10000)
     }
+    this.socket["ySocket"].addEventListener('open', (event) => {
+        console.log("rpc连接成功");
+    });
+    this.socket["ySocket"].addEventListener('error', (event) => {
+        console.error('rpc连接出错,请检查是否打开服务端:', event.error);
+    });
 
 };
 Hlclient.prototype.send = function (msg) {
@@ -69,42 +79,42 @@ Hlclient.prototype.regAction = function (func_name, func) {
 Hlclient.prototype.handlerRequest = function (requestJson) {
     var _this = this;
     try {
-        var result=JSON.parse(requestJson)
+        var result = JSON.parse(requestJson)
     } catch (error) {
-		console.log("catch error",requestJson);
+        console.log("catch error", requestJson);
         result = transjson(requestJson)
     }
     //console.log(result)
     if (!result['action']) {
-        this.sendResult('','need request param {action}');
+        this.sendResult('', 'need request param {action}');
         return
     }
-    var action=result["action"]
+    var action = result["action"]
     var theHandler = this.handlers[action];
-    if (!theHandler){
-        this.sendResult(action,'action not found');
+    if (!theHandler) {
+        this.sendResult(action, 'action not found');
         return
     }
     try {
-        if (!result["param"]){
+        if (!result["param"]) {
             theHandler(function (response) {
                 _this.sendResult(action, response);
             })
-        }else{
-            var param=result["param"]
+        } else {
+            var param = result["param"]
             try {
-                param=JSON.parse(param)
-            }catch (e){
+                param = JSON.parse(param)
+            } catch (e) {
                 console.log("")
             }
             theHandler(function (response) {
                 _this.sendResult(action, response);
-            },param)
+            }, param)
         }
 
     } catch (e) {
         console.log("error: " + e);
-        _this.sendResult(action+e);
+        _this.sendResult(action + e);
     }
 }
 
@@ -113,13 +123,13 @@ Hlclient.prototype.sendResult = function (action, e) {
 }
 
 
-function transjson(formdata){
+function transjson(formdata) {
     var regex = /"action":(?<actionName>.*?),/g
     var actionName = regex.exec(formdata).groups.actionName
-    stringfystring =  formdata.match(/{..data..:.*..\w+..:\s...*?..}/g).pop()
-    stringfystring= stringfystring.replace(/\\"/g,'"')
+    stringfystring = formdata.match(/{..data..:.*..\w+..:\s...*?..}/g).pop()
+    stringfystring = stringfystring.replace(/\\"/g, '"')
     paramstring = JSON.parse(stringfystring)
-    tens = `{"action":`+ actionName + `,"param":{}}`
+    tens = `{"action":` + actionName + `,"param":{}}`
     tjson = JSON.parse(tens)
     tjson.param = paramstring
     return tjson
