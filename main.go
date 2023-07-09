@@ -186,7 +186,7 @@ func checkTimeout(c2 chan string) {
 	// 100ms检查一次
 	for i := 0; i < defaultTimeout*10; i++ {
 		if len(c2) > 0 {
-			break
+			return
 		}
 		time.Sleep(time.Millisecond * 100)
 	}
