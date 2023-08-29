@@ -145,8 +145,20 @@ func GQueryFunc(client *Clients, funcName string, param string, resChan chan<- s
 	if err != nil {
 		fmt.Println(err, "写入数据失败")
 	}
-	res := <-client.actionData[funcName]
-	resChan <- res
+	resultFlag := false
+	for i := 0; i < defaultTimeout*10; i++ {
+		if len(client.actionData[funcName]) > 0 {
+			res := <-client.actionData[funcName]
+			resChan <- res
+			resultFlag = true
+			break
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
+	// 循环完了还是没有数据，那就超时退出
+	if true != resultFlag {
+		resChan <- "黑脸怪：timeout"
+	}
 	defer func() {
 		close(resChan)
 	}()
@@ -182,9 +194,8 @@ func ResultSet(c *gin.Context) {
 		return
 	}
 
-	c2 := make(chan string)
+	c2 := make(chan string, 1)
 	go GQueryFunc(client, Action, Param, c2)
-	//go checkTimeout(c2)
 	//把管道传过去，获得值就返回了
 	c.JSON(200, gin.H{"status": 200, "group": client.clientGroup, "name": client.clientName, "data": <-c2})
 
