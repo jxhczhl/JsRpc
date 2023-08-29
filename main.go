@@ -59,7 +59,7 @@ func NewClient(group string, name string, ws *websocket.Conn) *Clients {
 	return &Clients{
 		clientGroup: group,
 		clientName:  name,
-		actionData:  make(map[string]chan string), // action有消息后就保存到chan里
+		actionData:  make(map[string]chan string, 1), // action有消息后就保存到chan里
 		clientWs:    ws,
 	}
 }
@@ -90,7 +90,7 @@ func ws(c *gin.Context) {
 			action := msg[:strIndex]
 			client.actionData[action] <- msg[strIndex+5:]
 			logPrint("get_message:", msg[strIndex+5:])
-			hlSyncMap.Store(group+"->"+name, client)
+			//hlSyncMap.Store(group+"->"+name, client)
 		} else {
 			fmt.Println(msg, "message error")
 		}
@@ -147,6 +147,9 @@ func GQueryFunc(client *Clients, funcName string, param string, resChan chan<- s
 	}
 	res := <-client.actionData[funcName]
 	resChan <- res
+	defer func() {
+		close(resChan)
+	}()
 }
 
 func ResultSet(c *gin.Context) {
@@ -181,7 +184,7 @@ func ResultSet(c *gin.Context) {
 
 	c2 := make(chan string)
 	go GQueryFunc(client, Action, Param, c2)
-	go checkTimeout(c2)
+	//go checkTimeout(c2)
 	//把管道传过去，获得值就返回了
 	c.JSON(200, gin.H{"status": 200, "group": client.clientGroup, "name": client.clientName, "data": <-c2})
 
@@ -258,7 +261,6 @@ func TlsHandler() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
 func main() {
 	for _, v := range os.Args {
 		if v == "log" {
