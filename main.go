@@ -41,6 +41,11 @@ type Message struct {
 	Action string `json:"action"`
 	Param  string `json:"param"`
 }
+type logWriter struct{}
+
+func (w logWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
 
 // is print?
 func logPrint(p ...interface{}) {
@@ -260,6 +265,9 @@ func main() {
 			isPrint = true
 		}
 	}
+	// 将默认的日志输出器设置为空
+	//gin.DefaultWriter = logWriter{}
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET("/", Index)
 	r.GET("/go", ResultSet)
