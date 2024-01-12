@@ -109,7 +109,7 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
 
     } catch (e) {
         console.log("error: " + e);
-        _this.sendResult(action + e);
+        _this.sendResult(action , e);
     }
 }
 
