@@ -27,16 +27,16 @@ Hlclient.prototype.connect = function () {
     try {
         this.socket["ySocket"] = new WebSocket(this.wsURL);
         this.socket["ySocket"].onmessage = function (e) {
-            try {
-                let blob = e.data
-                blob.text().then(data => {
-                    _this.handlerRequest(data);
-                })
-            } catch {
-                console.log("not blob")
-                _this.handlerRequest(blob)
-            }
-
+            _this.handlerRequest(e.data)
+            // let blob = e.data
+            // try {
+            //     blob.text().then(data => {
+            //         _this.handlerRequest(data);
+            //     })
+            // } catch {
+            //     console.log("not blob")
+            //     _this.handlerRequest(blob)
+            // }
         }
     } catch (e) {
         console.log("connection failed,reconnect after 10s");

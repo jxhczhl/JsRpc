@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"github.com/unrolled/secure"
 	"net/http"
 	"os"
@@ -50,7 +51,7 @@ func (w logWriter) Write(p []byte) (n int, err error) {
 // is print?
 func logPrint(p ...interface{}) {
 	if isPrint {
-		fmt.Println(p)
+		log.Infoln(p)
 	}
 }
 
@@ -140,7 +141,7 @@ func GQueryFunc(client *Clients, funcName string, param string, resChan chan<- s
 		client.actionData[funcName] = make(chan string, 1) //此次action初始化1个消息
 	}
 	gm.Lock()
-	err := clientWs.WriteMessage(2, data)
+	err := clientWs.WriteMessage(1, data)
 	gm.Unlock()
 	if err != nil {
 		fmt.Println(err, "写入数据失败")
@@ -280,6 +281,7 @@ func main() {
 	}
 	// 将默认的日志输出器设置为空
 	//gin.DefaultWriter = logWriter{}
+	fmt.Println("欢迎使用jsrpc~")
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET("/", Index)
@@ -292,9 +294,13 @@ func main() {
 	r.GET("/list", getList)
 	r.Use(TlsHandler())
 
+	//编译https版放开下面这行注释代码
+	//go func() {
+	//	err := r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	}
+	//}()
 	_ = r.Run(BasicPort)
-
-	//编译https版放开下面这行注释代码 并且把上一行注释
-	//_ = r.RunTLS(SSLPort, "zhengshu.pem", "zhengshu.key")
 
 }
