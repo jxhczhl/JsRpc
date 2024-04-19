@@ -1,17 +1,25 @@
-# JsRPC
+```dart
+
+       __       _______..______      .______     ______ 
+      |  |     /       ||   _  \     |   _  \   /      |
+      |  |    |   (----`|  |_)  |    |  |_)  | |  ,----'
+.--.  |  |     \   \    |      /     |   ___/  |  |     
+|  `--'  | .----)   |   |  |\  \----.|  |      |  `----.
+ \______/  |_______/    | _| `._____|| _|       \______|
+
+```
 
 
 -- js逆向之远程调用(rpc)免去抠代码补环境
 
 > 黑脸怪
 <!-- TOC -->
-* [JsRPC](#jsrpc)
   * [目录结构](#目录结构)
   * [基本介绍](#基本介绍)
   * [实现](#实现)
   * [食用方法](#食用方法)
     * [打开编译好的文件，开启服务(releases下载)](#打开编译好的文件开启服务releases下载)
-    * [注入JS，构建通信环境（/resouces/JsEnv_Dev.js）](#注入js构建通信环境resoucesjsenvdevjs)
+    * [注入JS，构建通信环境（/resouces/JsEnv_De.js）](#注入js构建通信环境resoucesjsenv_dejs)
     * [连接通信](#连接通信)
       * [I 远程调用0：](#i-远程调用0)
         * [接口传js代码让浏览器执行](#接口传js代码让浏览器执行)
@@ -20,6 +28,7 @@
         * [远程调用2：带参获取值](#远程调用2带参获取值)
         * [远程调用3：带多个参获 并且使用post方式 取值](#远程调用3带多个参获-并且使用post方式-取值)
   * [食用案例-爬虫练手-xx网第15题](#食用案例-爬虫练手-xx网第15题)
+  * [其他说明](#其他说明)
   * [BUG修复](#bug修复)
   * [其他案例](#其他案例)
   * [常见问题](#常见问题)
@@ -31,6 +40,7 @@
 ```dart
 -- main.go (服务器的主代码)
 -- resouces/JsEnv_Dev.js (客户端注入js环境)
+-- config.yaml (可选配置文件)
 ```
 
 ## 基本介绍
@@ -43,21 +53,17 @@
 
 > 说明：本方法可以https证书且支持wss
 
-在https的网站想要新建WebSocket连接如果是连接到普通的ws会报安全错误，连接本地(127.0.0.1)不会报错~ 可以用本地和wss 你自己看着玩
-
-1. 无https证书者。直接编译main.go 使用本地ip(127.0.0.1)可以在https的网站直接连接ws使用 默认端口12080
-2. 有https证书者。修改main.go文件 把r.Run()注释掉，把r.RunTls注释取消掉 并且参数设置证书的路径 直接输入名字就是当前路径 默认端口：12443
-
 
 ## 食用方法
 
 ### 打开编译好的文件，开启服务(releases下载)
 
-如下图所示
-![image](https://user-images.githubusercontent.com/41224971/161306799-57f009dc-5448-402f-ab4d-ee5c6c969c91.png)
+如图所示
 
-1.01版本默认不打印日志
-如需要打印日志，请用命令行启动（程序后面加个log） ".\rpc.exe log"
+<img width="570" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/2530274f-33b9-4ccd-8749-6431abea27b2">
+
+如需更改部分配置，请下载config.yaml文件 并且放在服务程序的同级路径  
+[config.yaml]([链接地址](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml))
 
 **api 简介**
 
@@ -67,22 +73,28 @@
 - `/go` :获取数据的接口  (get | post)
 - `/execjs` :传递jscode给浏览器执行 (get | post)
 
-说明：接口用?group和name来区分任务 如 ws://127.0.0.1:12080/ws?group={}&name={}"
-  //注入ws的例子 group和name都可以随便起名(必填)
-http://127.0.0.1:12080/go?group={}&name={}&action={}&param={} //这是调用的接口
-group和name填写上面注入时候的，action是注册的方法名,param是可选的参数 接口参数暂定为这几个，但是param还可以传stringify过的json(字符串) 下面会介绍
+说明：接口用?group分组 如 "ws://127.0.0.1:12080/ws?group={}"
+以及可选参数 clientId
+clientId说明：以group分组后，如果有注册相同group的 可以传入这个id来区分客户端，如果不传 服务程序会自动生成一个。当访问调用接口时，服务程序随机发送请求到相同group的客户端里。
 
-### 注入JS，构建通信环境（/resouces/JsEnv_Dev.js）
+//注入例子 group可以随便起名(必填)
+http://127.0.0.1:12080/go?group={}&action={}&param={} //这是调用的接口
+group填写上面注入时候的，action是注册的方法名,param是可选的参数 param可以传string类型或者object类型(会尝试用JSON.parse)
 
-打开JsEnv 复制粘贴到网站控制台(注意：可以在浏览器开启的时候就先注入环境，不然要放开调试断点才能注入)
+### 注入JS，构建通信环境（[/resouces/JsEnv_De.js](https://github.com/jxhczhl/JsRpc/blob/main/resouces/JsEnv_Dev.js)）
 
-![image](https://user-images.githubusercontent.com/41224971/161307187-1265ec7c-fe64-45d7-b255-5472e0f25802.png)
+打开JsEnv 复制粘贴到网站控制台(注意：可以在浏览器开启的时候就先注入环境，不要在调试断点时候注入)
+
+<img width="856" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/9fbc413d-6a97-41e1-9aa4-2c6d0b7c7dd6">
+
 
 ### 连接通信
 
 ```js
 // 注入环境后连接通信
-var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&name=hlg");
+var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz");
+// 可选  
+var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&clientId="+new Date().getTime())
 ```
 
 #### I 远程调用0：
@@ -104,7 +116,6 @@ jscode = """
 url = "http://localhost:12080/execjs"
 data = {
     "group": "zzz",
-    "name": "hlg",
     "jscode":jscode
 }
 res = requests.post(url, data=data)
@@ -128,20 +139,13 @@ demo.regAction("hello", function (resolve) {
 })
 
 
-// 异步的代码注册：
-demo.regAction('token', async (resolve) => {
-  let token = await grecaptcha.execute(0, { action: '' }).then(function (token) {
-    return token
-  });
-  resolve(token);
-})
-
 ```
 
-    访问接口，获得js端的返回值
-    http://localhost:12080/go?group=zzz&name=hlg&action=hello
+访问接口，获得js端的返回值  
+http://localhost:12080/go?group=zzz&name=hlg&action=hello
 
-![image](https://user-images.githubusercontent.com/41224971/161309382-81a9a9cc-65f7-4531-a1e6-a892dfe1facd.png)
+<img width="1144" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/5f0da051-18f3-49ac-98f8-96f408440475">
+
 
 ##### 远程调用2：带参获取值
 
@@ -154,7 +158,10 @@ demo.regAction("hello2", function (resolve,param) {
 })
 ```
 
-    访问接口，获得js端的返回值![image](https://user-images.githubusercontent.com/41224971/161311297-6731c089-3de2-44ed-80b9-21a03746a52c.png)
+访问接口，获得js端的返回值
+
+<img width="848" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/91b993ae-7831-4b65-8553-f90e19cc7ebe">
+
 
 ##### 远程调用3：带多个参获 并且使用post方式 取值
 
@@ -171,13 +178,12 @@ demo.regAction("hello3", function (resolve,param) {
 })
 ```
 
-   访问接口，获得js端的返回值
+访问接口，获得js端的返回值
 
 ```python
 url = "http://localhost:12080/go"
 data = {
     "group": "zzz",
-    "name": "hlg",
     "action": "hello3",
     "param": json.dumps({"user":"黑脸怪","status":"好困啊"})
 }
@@ -186,7 +192,8 @@ res=requests.post(url, data=data) #这里换get也是可以的
 print(res.text)
 ```
 
-![image](https://user-images.githubusercontent.com/41224971/161313397-166cbda0-fe8b-4063-b815-376902d82f74.png)
+<img width="1145" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/5af9bf90-cdfd-4d89-a3c0-a11a54ca7969">
+
 
 ## 食用案例-爬虫练手-xx网第15题
 
@@ -206,6 +213,21 @@ print(res.text)
 ![image](https://user-images.githubusercontent.com/41224971/134799668-3dd385e7-f44c-4fb3-85ff-00d78c674865.png)
 
     控制台可以关，但是注入的网页不要关哦
+
+## 其他说明
+如果需要更改rpc服务的一些配置 比如端口号啊，https/wss服务，打印日志等  
+可以在执行文件的同路径 下载[config.yaml]([链接地址](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml))文件配置  
+<img width="879" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/ad023b16-65b5-418e-8494-e988bb02fb12">
+
+group说明  
+一般配置group名字不一样分开调用就行  
+特别情况，可以一样的group名，比如3个客户端(标签演示)执行加密，程序会随机一个客户端来执行并返回。  
+<img width="1810" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/6c111aea-1550-4683-a0c2-ed3c7e232d5a">
+请确保action也都是一样  
+<img width="1934" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/f6e0d713-6f5f-4d7d-b5e9-d7eb2d8316ae">
+多个group除了随机 还可以根据clientId指定客户端执行  
+http://127.0.0.1:12080/go?group=zzz&action=hello  
+http://127.0.0.1:12080/go?group=zzz&action=hello&clientId=hliang1713564563459  可选
 
 ## BUG修复
 
@@ -232,5 +254,14 @@ print(res.text)
 
 ## TODO
 
+- [ ] 异步方法调用
+```js
+demo.regAction('token', async (resolve) => {
+    let token = await grecaptcha.execute(0, { action: '' }).then(function (token) {
+        return token
+    });
+    resolve(token);
+})
+```
 - [ ] ssl Docker Deploy
 - [ ] K8s Deploy

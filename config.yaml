@@ -1,0 +1,10 @@
+BasicListen: "0.0.0.0:12080" # 不想暴露公网/局域网可改成127.0.0.1:port
+HttpsServices:
+  IsEnable: false # 是否启用https/wss服务
+  HttpsListen: "0.0.0.0:12443"
+  PemPath: "hl98.cn.pem"
+  KeyPath: "hl98.cn.key"
+
+DefaultTimeOut: 30 # 当执行端没有返回值时，等待%d秒返回超时
+CloseLog: false # 关闭一些日志
+CloseWebLog: false # 关闭Web服务访问的日志

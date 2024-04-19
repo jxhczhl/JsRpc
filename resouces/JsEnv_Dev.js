@@ -11,32 +11,20 @@ function Hlclient(wsURL) {
 
         }
     };
-    this.socket = {};
+    this.socket = undefined;
     if (!wsURL) {
         throw new Error('wsURL can not be empty!!')
     }
     this.connect()
-    this.socket["ySocket"].addEventListener('close', (event) => {
-        console.log('rpc已关闭');
-    });
 }
 
 Hlclient.prototype.connect = function () {
     console.log('begin of connect to wsURL: ' + this.wsURL);
     var _this = this;
     try {
-        this.socket["ySocket"] = new WebSocket(this.wsURL);
-        this.socket["ySocket"].onmessage = function (e) {
+        this.socket = new WebSocket(this.wsURL);
+        this.socket.onmessage = function (e) {
             _this.handlerRequest(e.data)
-            // let blob = e.data
-            // try {
-            //     blob.text().then(data => {
-            //         _this.handlerRequest(data);
-            //     })
-            // } catch {
-            //     console.log("not blob")
-            //     _this.handlerRequest(blob)
-            // }
         }
     } catch (e) {
         console.log("connection failed,reconnect after 10s");
@@ -44,22 +32,22 @@ Hlclient.prototype.connect = function () {
             _this.connect()
         }, 10000)
     }
-    this.socket["ySocket"].onclose = function () {
-        console.log("connection failed,reconnect after 10s");
+    this.socket.onclose = function () {
+        console.log('rpc已关闭');
         setTimeout(function () {
             _this.connect()
         }, 10000)
     }
-    this.socket["ySocket"].addEventListener('open', (event) => {
+    this.socket.addEventListener('open', (event) => {
         console.log("rpc连接成功");
     });
-    this.socket["ySocket"].addEventListener('error', (event) => {
+    this.socket.addEventListener('error', (event) => {
         console.error('rpc连接出错,请检查是否打开服务端:', event.error);
     });
 
 };
 Hlclient.prototype.send = function (msg) {
-    this.socket["ySocket"].send(msg)
+    this.socket.send(msg)
 }
 
 Hlclient.prototype.regAction = function (func_name, func) {
@@ -100,17 +88,17 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
             theHandler(function (response) {
                 _this.sendResult(action, response);
             })
-        } else {
-            var param = result["param"]
-            try {
-                param = JSON.parse(param)
-            } catch (e) {
-                console.log("")
-            }
-            theHandler(function (response) {
-                _this.sendResult(action, response);
-            }, param)
+            return
         }
+        var param = result["param"]
+        try {
+            param = JSON.parse(param)
+        } catch (e) {
+            console.log("")//不是json无需操作
+        }
+        theHandler(function (response) {
+            _this.sendResult(action, response);
+        }, param)
 
     } catch (e) {
         console.log("error: " + e);
@@ -119,9 +107,15 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
 }
 
 Hlclient.prototype.sendResult = function (action, e) {
+    if (typeof e === 'object' && e !== null) {
+        try {
+            e = JSON.stringify(e)
+        } catch (v) {
+            console.log(v)//不是json无需操作
+        }
+    }
     this.send(action + atob("aGxeX14") + e);
 }
-
 
 function transjson(formdata) {
     var regex = /"action":(?<actionName>.*?),/g
