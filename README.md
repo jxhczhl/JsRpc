@@ -37,11 +37,11 @@
 
 ## 目录结构
 
-```dart
--- main.go (服务器的主代码)
--- resouces/JsEnv_Dev.js (客户端注入js环境)
--- config.yaml (可选配置文件)
-```
+
+>  [main.go](https://github.com/jxhczhl/JsRpc/blob/main/main.go) (服务器的主代码)  
+>  [/resouces/JsEnv_De.js](https://github.com/jxhczhl/JsRpc/blob/main/resouces/JsEnv_Dev.js) (客户端注入js环境)  
+>  [config.yaml](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml) (可选配置文件)  
+
 
 ## 基本介绍
 
@@ -63,7 +63,7 @@
 <img width="570" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/2530274f-33b9-4ccd-8749-6431abea27b2">
 
 如需更改部分配置，请下载config.yaml文件 并且放在服务程序的同级路径  
-[config.yaml]([链接地址](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml))
+[config.yaml](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml)
 
 **api 简介**
 
@@ -85,7 +85,8 @@ group填写上面注入时候的，action是注册的方法名,param是可选的
 
 打开JsEnv 复制粘贴到网站控制台(注意：可以在浏览器开启的时候就先注入环境，不要在调试断点时候注入)
 
-![image](https://github.com/jxhczhl/JsRpc/assets/41224971/9fbc413d-6a97-41e1-9aa4-2c6d0b7c7dd6)
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/799fd2ce-28f6-4719-9ff8-e60da57068d7")
+
 
 
 ### 连接通信
@@ -249,7 +250,7 @@ http://127.0.0.1:12080/go?group=zzz&action=hello&clientId=hliang1713564563459  �
     1. websocket连接失败
       内容安全策略（Content Security Policy）
       Refused to connect to 'xx.xx' because it violates the following Content Security Policy directive: "connect-src 'self' 
-      这个网站不让连接websocket，好像可以用油猴注入使用，或者更改网页响应头
+      这个网站不让连接websocket，可以用油猴注入使用，或者更改网页响应头
     2. 异步操作获取值
       [参考](https://github.com/jxhczhl/JsRpc/issues/12)
 
