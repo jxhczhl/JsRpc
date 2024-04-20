@@ -276,13 +276,17 @@ func Execjs(c *gin.Context) {
 }
 
 func GetList(c *gin.Context) {
-	var groupMap []string
-	hlSyncMap.Range(func(key, _ interface{}) bool {
-		k := key.(string)
-		groupMap = append(groupMap, k)
+	var data = make(map[string][]string)
+	hlSyncMap.Range(func(_, value interface{}) bool {
+		client, ok := value.(*Clients)
+		if !ok {
+			return true // 继续遍历
+		}
+		group := client.clientGroup
+		data[group] = append(data[group], client.clientId)
 		return true
 	})
-	c.JSON(http.StatusOK, gin.H{"status": 200, "data": groupMap})
+	c.JSON(http.StatusOK, gin.H{"status": 200, "data": data})
 }
 
 func Index(c *gin.Context) {

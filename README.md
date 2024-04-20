@@ -85,7 +85,7 @@ group填写上面注入时候的，action是注册的方法名,param是可选的
 
 打开JsEnv 复制粘贴到网站控制台(注意：可以在浏览器开启的时候就先注入环境，不要在调试断点时候注入)
 
-<img width="856" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/9fbc413d-6a97-41e1-9aa4-2c6d0b7c7dd6">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/9fbc413d-6a97-41e1-9aa4-2c6d0b7c7dd6)
 
 
 ### 连接通信
@@ -94,7 +94,7 @@ group填写上面注入时候的，action是注册的方法名,param是可选的
 // 注入环境后连接通信
 var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz");
 // 可选  
-var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&clientId="+new Date().getTime())
+//var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz&clientId=hliang/"+new Date().getTime())
 ```
 
 #### I 远程调用0：
@@ -144,7 +144,7 @@ demo.regAction("hello", function (resolve) {
 访问接口，获得js端的返回值  
 http://localhost:12080/go?group=zzz&name=hlg&action=hello
 
-<img width="1144" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/5f0da051-18f3-49ac-98f8-96f408440475">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/5f0da051-18f3-49ac-98f8-96f408440475)
 
 
 ##### 远程调用2：带参获取值
@@ -160,7 +160,7 @@ demo.regAction("hello2", function (resolve,param) {
 
 访问接口，获得js端的返回值
 
-<img width="848" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/91b993ae-7831-4b65-8553-f90e19cc7ebe">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/91b993ae-7831-4b65-8553-f90e19cc7ebe)
 
 
 ##### 远程调用3：带多个参获 并且使用post方式 取值
@@ -192,8 +192,10 @@ res=requests.post(url, data=data) #这里换get也是可以的
 print(res.text)
 ```
 
-<img width="1145" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/5af9bf90-cdfd-4d89-a3c0-a11a54ca7969">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/5af9bf90-cdfd-4d89-a3c0-a11a54ca7969)
 
+list接口可查看当前注入的客户端信息  
+<img width="321" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/5b2ac7af-f6f0-4569-ac64-553ea41be387">
 
 ## 食用案例-爬虫练手-xx网第15题
 
@@ -217,14 +219,14 @@ print(res.text)
 ## 其他说明
 如果需要更改rpc服务的一些配置 比如端口号啊，https/wss服务，打印日志等  
 可以在执行文件的同路径 下载[config.yaml]([链接地址](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml))文件配置  
-<img width="879" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/ad023b16-65b5-418e-8494-e988bb02fb12">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/ad023b16-65b5-418e-8494-e988bb02fb12)
 
 group说明  
 一般配置group名字不一样分开调用就行  
 特别情况，可以一样的group名，比如3个客户端(标签演示)执行加密，程序会随机一个客户端来执行并返回。  
-<img width="1810" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/6c111aea-1550-4683-a0c2-ed3c7e232d5a">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/6c111aea-1550-4683-a0c2-ed3c7e232d5a)
 请确保action也都是一样  
-<img width="1934" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/f6e0d713-6f5f-4d7d-b5e9-d7eb2d8316ae">
+![image](https://github.com/jxhczhl/JsRpc/assets/41224971/f6e0d713-6f5f-4d7d-b5e9-d7eb2d8316ae)
 多个group除了随机 还可以根据clientId指定客户端执行  
 http://127.0.0.1:12080/go?group=zzz&action=hello  
 http://127.0.0.1:12080/go?group=zzz&action=hello&clientId=hliang1713564563459  可选
