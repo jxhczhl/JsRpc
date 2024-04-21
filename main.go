@@ -190,22 +190,6 @@ func GetResult(c *gin.Context) {
 		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
 		return
 	}
-	groupClients := make([]*Clients, 0)
-	//循环读取syncMap 获取group名字的
-	hlSyncMap.Range(func(_, value interface{}) bool {
-		tmpClients, ok := value.(*Clients)
-		if !ok {
-			return true
-		}
-		if tmpClients.clientGroup == group {
-			groupClients = append(groupClients, tmpClients)
-		}
-		return true
-	})
-	if len(groupClients) == 0 {
-		GinJsonMsg(c, http.StatusBadRequest, "没有找到注入的group:"+group)
-		return
-	}
 	action := RequestParam.Action
 	if action == "" {
 		GinJsonMsg(c, http.StatusOK, "请传入action来调用客户端方法")
@@ -213,6 +197,10 @@ func GetResult(c *gin.Context) {
 	}
 	clientId := RequestParam.ClientId
 	client := GetRandomClient(group, clientId)
+	if client == nil {
+		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+		return
+	}
 	c2 := make(chan string, 1)
 	go GQueryFunc(client, action, RequestParam.Param, c2)
 	//把管道传过去，获得值就返回了
@@ -221,6 +209,16 @@ func GetResult(c *gin.Context) {
 }
 
 func GetRandomClient(group string, clientId string) *Clients {
+	var client *Clients
+	// 不传递clientId时候，从group分组随便拿一个
+	if clientId != "" {
+		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
+		if ok == false {
+			return nil
+		}
+		client, _ = clientName.(*Clients)
+		return client
+	}
 	groupClients := make([]*Clients, 0)
 	//循环读取syncMap 获取group名字的
 	hlSyncMap.Range(func(_, value interface{}) bool {
@@ -236,23 +234,10 @@ func GetRandomClient(group string, clientId string) *Clients {
 	if len(groupClients) == 0 {
 		return nil
 	}
-
-	var client *Clients
-	// 不传递clientId时候，从group分组随便拿一个
-	if clientId == "" {
-		// 使用随机数发生器
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		randomIndex := r.Intn(len(groupClients))
-		client = groupClients[randomIndex]
-
-	} else {
-		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
-		if ok == false {
-			return nil
-		}
-		//取一个ws客户端
-		client, _ = clientName.(*Clients)
-	}
+	// 使用随机数发生器
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	randomIndex := r.Intn(len(groupClients))
+	client = groupClients[randomIndex]
 	return client
 
 }
@@ -277,6 +262,10 @@ func Execjs(c *gin.Context) {
 	}
 	clientId := RequestParam.ClientId
 	client := GetRandomClient(group, clientId)
+	if client == nil {
+		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+		return
+	}
 	c2 := make(chan string)
 	go GQueryFunc(client, Action, JsCode, c2)
 	c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientId, "data": <-c2})
