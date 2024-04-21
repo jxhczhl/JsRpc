@@ -3,6 +3,7 @@ package main
 import (
 	"JsRpc/config"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -193,13 +194,15 @@ func GetResult(c *gin.Context) {
 	if group == "" {
 		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
 	}
-	groupClients := make(map[string]*Clients)
+	groupClients := make([]*Clients, 0)
 	//循环读取syncMap 获取group名字的
-	hlSyncMap.Range(func(key, value interface{}) bool {
-		k := key.(string)
-		if strings.HasPrefix(k, group+"->") {
-			client := value.(*Clients)
-			groupClients[k] = client
+	hlSyncMap.Range(func(_, value interface{}) bool {
+		tmpClients, ok := value.(*Clients)
+		if !ok {
+			return true
+		}
+		if tmpClients.clientGroup == group {
+			groupClients = append(groupClients, tmpClients)
 		}
 		return true
 	})
@@ -216,15 +219,10 @@ func GetResult(c *gin.Context) {
 	var client *Clients
 	// 不传递clientId时候，从group分组随便拿一个
 	if clientId == "" {
-		groupKeys := make([]string, 0, len(groupClients))
-		for k := range groupClients {
-			groupKeys = append(groupKeys, k)
-		}
 		// 使用随机数发生器
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		randomIndex := r.Intn(len(groupKeys)) // 随机拿一个group开头的
-		clientName := groupKeys[randomIndex]  // group->clientId
-		client = groupClients[clientName]
+		randomIndex := r.Intn(len(groupClients))
+		client = groupClients[randomIndex]
 
 	} else {
 		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
@@ -310,13 +308,16 @@ func TlsHandler(HttpsHost string) gin.HandlerFunc {
 func main() {
 	JsRpc := "       __       _______..______      .______     ______ \n      |  |     /       ||   _  \\     |   _  \\   /      |\n      |  |    |   (----`|  |_)  |    |  |_)  | |  ,----'\n.--.  |  |     \\   \\    |      /     |   ___/  |  |     \n|  `--'  | .----)   |   |  |\\  \\----.|  |      |  `----.\n \\______/  |_______/    | _| `._____|| _|       \\______|\n                                                        \n"
 	fmt.Print(JsRpc)
-
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:     true, // 强制终端输出带颜色日志
 		FullTimestamp:   true, // 显示完整时间戳
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	ConfigPath := "./config.yaml"
+	var ConfigPath string
+	// 定义命令行参数-c，后面跟着的是默认值以及参数说明
+	flag.StringVar(&ConfigPath, "c", "config.yaml", "指定配置文件的路径")
+	// 解析命令行参数
+	flag.Parse()
 	MainConf := config.ConfStruct{
 		BasicListen: `:12080`,
 		HttpsServices: config.HttpsConfig{
@@ -325,8 +326,10 @@ func main() {
 		},
 		DefaultTimeOut: defaultTimeout,
 	}
-	_ = config.InitConf(ConfigPath, &MainConf)
-
+	err := config.InitConf(ConfigPath, &MainConf)
+	if err != nil {
+		log.Error("读取配置文件错误，将使用默认配置运行。 ", err.Error())
+	}
 	if MainConf.CloseWebLog {
 		// 将默认的日志输出器设置为空
 		gin.DefaultWriter = logWriter{}
@@ -364,7 +367,7 @@ func main() {
 	sb.WriteString("当前监听地址：")
 	sb.WriteString(MainConf.BasicListen)
 
-	sb.WriteString(" tls启用状态：")
+	sb.WriteString(" ssl启用状态：")
 	sb.WriteString(strconv.FormatBool(MainConf.HttpsServices.IsEnable))
 
 	if MainConf.HttpsServices.IsEnable {
@@ -373,7 +376,7 @@ func main() {
 	}
 	log.Infoln(sb.String())
 
-	err := r.Run(MainConf.BasicListen)
+	err = r.Run(MainConf.BasicListen)
 	if err != nil {
 		log.Error(err)
 	}

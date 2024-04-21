@@ -39,7 +39,7 @@
 
 
 >  [main.go](https://github.com/jxhczhl/JsRpc/blob/main/main.go) (服务器的主代码)  
->  [/resouces/JsEnv_De.js](https://github.com/jxhczhl/JsRpc/blob/main/resouces/JsEnv_Dev.js) (客户端注入js环境)  
+>  [resouces/JsEnv_De.js](https://github.com/jxhczhl/JsRpc/blob/main/resouces/JsEnv_Dev.js) (客户端注入js环境)  
 >  [config.yaml](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml) (可选配置文件)  
 
 
@@ -62,8 +62,7 @@
 
 <img width="570" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/2530274f-33b9-4ccd-8749-6431abea27b2">
 
-如需更改部分配置，请下载config.yaml文件 并且放在服务程序的同级路径  
-[config.yaml](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml)
+[如需更改部分配置，请查看 "其他说明"](#其他说明)  
 
 **api 简介**
 
@@ -220,6 +219,8 @@ list接口可查看当前注入的客户端信息
 ## 其他说明
 如果需要更改rpc服务的一些配置 比如端口号啊，https/wss服务，打印日志等  
 可以在执行文件的同路径 下载[config.yaml]([链接地址](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml))文件配置  
+或使用-c参数指定配置文件路径  
+./JsRpc.exe -c config1.yaml  
 ![image](https://github.com/jxhczhl/JsRpc/assets/41224971/ad023b16-65b5-418e-8494-e988bb02fb12)
 
 group说明  

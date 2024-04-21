@@ -8,10 +8,10 @@ import (
 func InitConf(path string, conf *ConfStruct) (err error) {
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
-		return
+		return err
 	}
 	if err = yaml.Unmarshal(fileContent, &conf); err != nil {
-		return
+		return err
 	}
 	return
 }
