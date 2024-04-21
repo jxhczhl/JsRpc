@@ -46,6 +46,7 @@ type ApiParam struct {
 	ClientId  string `form:"clientId" json:"clientId"`
 	Action    string `form:"action" json:"action"`
 	Param     string `form:"param" json:"param"`
+	Code      string `form:"code" json:"code"` // 直接eval的代码
 }
 
 type logWriter struct{}
@@ -145,13 +146,7 @@ func wsTest(c *gin.Context) {
 
 // GQueryFunc 发送请求到客户端
 func GQueryFunc(client *Clients, funcName string, param string, resChan chan<- string) {
-	WriteDate := Message{}
-	WriteDate.Action = funcName
-	if param == "" {
-		WriteDate.Param = ""
-	} else {
-		WriteDate.Param = param
-	}
+	WriteDate := Message{Param: param, Action: funcName}
 	data, _ := json.Marshal(WriteDate)
 	clientWs := client.clientWs
 	if client.actionData[funcName] == nil {
@@ -193,6 +188,7 @@ func GetResult(c *gin.Context) {
 	group := RequestParam.GroupName
 	if group == "" {
 		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
+		return
 	}
 	groupClients := make([]*Clients, 0)
 	//循环读取syncMap 获取group名字的
@@ -216,6 +212,31 @@ func GetResult(c *gin.Context) {
 		return
 	}
 	clientId := RequestParam.ClientId
+	client := GetRandomClient(group, clientId)
+	c2 := make(chan string, 1)
+	go GQueryFunc(client, action, RequestParam.Param, c2)
+	//把管道传过去，获得值就返回了
+	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c2})
+
+}
+
+func GetRandomClient(group string, clientId string) *Clients {
+	groupClients := make([]*Clients, 0)
+	//循环读取syncMap 获取group名字的
+	hlSyncMap.Range(func(_, value interface{}) bool {
+		tmpClients, ok := value.(*Clients)
+		if !ok {
+			return true
+		}
+		if tmpClients.clientGroup == group {
+			groupClients = append(groupClients, tmpClients)
+		}
+		return true
+	})
+	if len(groupClients) == 0 {
+		return nil
+	}
+
 	var client *Clients
 	// 不传递clientId时候，从group分组随便拿一个
 	if clientId == "" {
@@ -227,46 +248,35 @@ func GetResult(c *gin.Context) {
 	} else {
 		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
 		if ok == false {
-			GinJsonMsg(c, http.StatusBadRequest, "没有找到group,clientId:"+group+"->"+clientId)
-			return
+			return nil
 		}
 		//取一个ws客户端
 		client, _ = clientName.(*Clients)
-
 	}
-	c2 := make(chan string, 1)
-	go GQueryFunc(client, action, RequestParam.Param, c2)
-	//把管道传过去，获得值就返回了
-	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c2})
+	return client
 
 }
 
 func Execjs(c *gin.Context) {
-	var getGroup, getName, JsCode string
+	var RequestParam ApiParam
+	if err := c.ShouldBind(&RequestParam); err != nil {
+		GinJsonMsg(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	Action := "_execjs"
 	//获取参数
-	getGroup, getName, JsCode = c.Query("group"), c.Query("name"), c.Query("jscode")
-	//如果获取不到 说明是post提交的
-	if getGroup == "" && getName == "" {
-		//切换post获取方式
-		getGroup, getName, JsCode = c.PostForm("group"), c.PostForm("name"), c.PostForm("jscode")
-	}
-	if getGroup == "" || getName == "" {
-		c.JSON(400, gin.H{"status": 400, "data": "input group and name"})
+	group := RequestParam.GroupName
+	if group == "" {
+		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
 		return
 	}
-	logPrint(getGroup, getName, JsCode)
-	clientName, ok := hlSyncMap.Load(getGroup + "->" + getName)
-	if ok == false {
-		c.JSON(400, gin.H{"status": 400, "data": "注入了ws？没有找到当前组和名字"})
+	JsCode := RequestParam.Code
+	if JsCode == "" {
+		GinJsonMsg(c, http.StatusBadRequest, "请传入代码")
 		return
 	}
-	//取一个ws客户端
-	client, ko := clientName.(*Clients)
-	if !ko {
-		return
-	}
-
+	clientId := RequestParam.ClientId
+	client := GetRandomClient(group, clientId)
 	c2 := make(chan string)
 	go GQueryFunc(client, Action, JsCode, c2)
 	c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientId, "data": <-c2})

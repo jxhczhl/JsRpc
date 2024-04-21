@@ -106,7 +106,7 @@ var demo = new Hlclient("ws://127.0.0.1:12080/ws?group=zzz");
 ```python
 import requests
 
-jscode = """
+js_code = """
 (function(){
     console.log("test")
     return "执行成功"
@@ -116,7 +116,7 @@ jscode = """
 url = "http://localhost:12080/execjs"
 data = {
     "group": "zzz",
-    "jscode":jscode
+    "code": js_code
 }
 res = requests.post(url, data=data)
 print(res.text)

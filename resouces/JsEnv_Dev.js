@@ -93,9 +93,7 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
         var param = result["param"]
         try {
             param = JSON.parse(param)
-        } catch (e) {
-            console.log("")//不是json无需操作
-        }
+        } catch (e) {}
         theHandler(function (response) {
             _this.sendResult(action, response);
         }, param)
