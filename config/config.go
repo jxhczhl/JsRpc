@@ -50,6 +50,7 @@ func initConf(path string) (ConfStruct, error) {
 	if err != nil {
 		return defaultConf, err
 	}
+	DefaultTimeout = conf.DefaultTimeOut
 	return conf, nil
 }
 
