@@ -20,7 +20,7 @@ func ReadConf() ConfStruct {
 
 	conf, err := initConf(ConfigPath)
 	if err != nil {
-		log.Errorln("读取配置文件错误，将使用默认配置运行。 ", err.Error())
+		log.Warning("读取配置文件错误，将使用默认配置运行。 ", err.Error())
 	}
 	return conf
 }
