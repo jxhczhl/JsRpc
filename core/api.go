@@ -293,6 +293,10 @@ func setupRouters(conf config.ConfStruct) *gin.Engine {
 }
 
 func InitAPI(conf config.ConfStruct) {
+	if conf.CloseWebLog {
+		// 将默认的日志输出器设置为空
+		gin.DefaultWriter = utils.LogWriter{}
+	}
 	gin.SetMode(getGinMode(conf.Mode))
 	router := setupRouters(conf)
 

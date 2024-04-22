@@ -7,6 +7,7 @@ import (
 var isPrint = true
 
 func InitLogger(closeLog bool) {
+
 	if closeLog {
 		isPrint = false
 	}
@@ -18,9 +19,9 @@ func InitLogger(closeLog bool) {
 	})
 }
 
-type logWriter struct{}
+type LogWriter struct{}
 
-func (w logWriter) Write(p []byte) (n int, err error) {
+func (w LogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
