@@ -71,6 +71,8 @@
 - `/wst`  :ws测试使用-发啥回啥 (ws | wss)
 - `/go` :获取数据的接口  (get | post)
 - `/execjs` :传递jscode给浏览器执行 (get | post)
+- `/page/cookie` :直接获取当前页面的cookie (get)
+- `/page/html` :获取当前页面的html (get)
 
 说明：接口用?group分组 如 "ws://127.0.0.1:12080/ws?group={}"
 以及可选参数 clientId
@@ -142,7 +144,7 @@ demo.regAction("hello", function (resolve) {
 ```
 
 访问接口，获得js端的返回值  
-http://localhost:12080/go?group=zzz&name=hlg&action=hello
+http://127.0.0.1:12080/go?group=zzz&action=hello
 
 ![image](https://github.com/jxhczhl/JsRpc/assets/41224971/5f0da051-18f3-49ac-98f8-96f408440475)
 
@@ -159,6 +161,7 @@ demo.regAction("hello2", function (resolve,param) {
 ```
 
 访问接口，获得js端的返回值
+http://127.0.0.1:12080/go?group=zzz&action=hello2&param=123456  
 
 ![image](https://github.com/jxhczhl/JsRpc/assets/41224971/91b993ae-7831-4b65-8553-f90e19cc7ebe)
 
@@ -181,7 +184,7 @@ demo.regAction("hello3", function (resolve,param) {
 访问接口，获得js端的返回值
 
 ```python
-url = "http://localhost:12080/go"
+url = "http://127.0.0.1:12080/go"
 data = {
     "group": "zzz",
     "action": "hello3",

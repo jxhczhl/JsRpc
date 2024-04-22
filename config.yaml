@@ -8,3 +8,5 @@ HttpsServices:
 DefaultTimeOut: 30 # 当执行端没有返回值时，等待%d秒返回超时
 CloseLog: false # 关闭一些日志
 CloseWebLog: false # 关闭Web服务访问的日志
+Mode: release  # release:发布版本   debug:调试版   test:测试版本
+Cors: false    # 是否开启CorsMiddleWare中间件--默认不开启
