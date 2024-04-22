@@ -195,6 +195,13 @@ res=requests.post(url, data=data) #这里换get也是可以的
 print(res.text)
 ```
 
+##### 远程调用4：获取页面基础信息
+
+```python
+resp = requests.get("http://127.0.0.1:12080/page/html?group=zzz")     # 直接获取当前页面的html
+resp = requests.get("http://127.0.0.1:12080/page/cookie?group=zzz")   # 直接获取当前页面的cookie
+```
+
 ![image](https://github.com/jxhczhl/JsRpc/assets/41224971/5af9bf90-cdfd-4d89-a3c0-a11a54ca7969)
 
 list接口可查看当前注入的客户端信息  
