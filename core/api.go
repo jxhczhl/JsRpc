@@ -144,6 +144,10 @@ func GetCookie(c *gin.Context) {
 
 	clientId := RequestParam.ClientId
 	client := getRandomClient(group, clientId)
+	if client == nil {
+		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+		return
+	}
 
 	c3 := make(chan string, 1)
 	go client.GQueryFunc("_execjs", utils.ConcatCode("document.cookie"), c3)
@@ -164,6 +168,10 @@ func GetHtml(c *gin.Context) {
 
 	clientId := RequestParam.ClientId
 	client := getRandomClient(group, clientId)
+	if client == nil {
+		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+		return
+	}
 
 	c3 := make(chan string, 1)
 	go client.GQueryFunc("_execjs", utils.ConcatCode("document.documentElement.outerHTML"), c3)
@@ -273,7 +281,7 @@ func getGinMode(mode string) string {
 	case "test":
 		return gin.TestMode
 	}
-	return gin.DebugMode // 默认调试模式
+	return gin.ReleaseMode // 默认就是release模式
 }
 
 func setupRouters(conf config.ConfStruct) *gin.Engine {
@@ -285,8 +293,7 @@ func setupRouters(conf config.ConfStruct) *gin.Engine {
 }
 
 func InitAPI(conf config.ConfStruct) {
-	mode := getGinMode(conf.Mode)
-	gin.SetMode(mode)
+	gin.SetMode(getGinMode(conf.Mode))
 	router := setupRouters(conf)
 
 	setJsRpcRouters(router) // 核心路由
