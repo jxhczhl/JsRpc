@@ -3,13 +3,29 @@ package config
 import (
 	"JsRpc/utils"
 	"errors"
+	"flag"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"os"
 )
 
 var DefaultTimeout = 30
 
-func InitConf(path string) (ConfStruct, error) {
+func ReadConf() ConfStruct {
+	var ConfigPath string
+	// 定义命令行参数-c，后面跟着的是默认值以及参数说明
+	flag.StringVar(&ConfigPath, "c", "config.yaml", "指定配置文件的路径")
+	// 解析命令行参数
+	flag.Parse()
+
+	conf, err := initConf(ConfigPath)
+	if err != nil {
+		log.Errorln("读取配置文件错误，将使用默认配置运行。 ", err.Error())
+	}
+	return conf
+}
+
+func initConf(path string) (ConfStruct, error) {
 	defaultConf := ConfStruct{
 		BasicListen: `:12080`,
 		HttpsServices: HttpsConfig{

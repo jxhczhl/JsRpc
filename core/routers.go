@@ -8,6 +8,12 @@ func setJsRpcRouters(router *gin.Engine) {
 	// 核心部分的的路由组
 	router.GET("/", index)
 
+	page := router.Group("/page")
+	{
+		page.GET("/cookie", GetCookie)
+		page.GET("/html", GetHtml)
+	}
+
 	rpc := router.Group("/")
 	{
 		rpc.GET("go", getResult)
@@ -18,4 +24,5 @@ func setJsRpcRouters(router *gin.Engine) {
 		rpc.POST("execjs", execjs)
 		rpc.GET("list", getList)
 	}
+
 }

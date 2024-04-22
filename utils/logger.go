@@ -24,7 +24,6 @@ func (w logWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// is print?
 func LogPrint(p ...interface{}) {
 	if isPrint {
 		log.Infoln(p)

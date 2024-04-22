@@ -3,22 +3,14 @@ package core
 import (
 	"JsRpc/config"
 	"JsRpc/utils"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/unrolled/secure"
-	"math/rand"
 	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
-	"time"
 )
 
 var (
@@ -75,8 +67,7 @@ func ws(c *gin.Context) {
 	}
 	//没有给客户端id的话 就用时间戳给他生成一个
 	if clientId == "" {
-		millisId := time.Now().UnixNano() / int64(time.Millisecond)
-		clientId = fmt.Sprintf("%d", millisId)
+		clientId = utils.GetUUID()
 	}
 	wsClient, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -98,7 +89,12 @@ func ws(c *gin.Context) {
 		if strIndex >= 1 {
 			action := msg[:strIndex]
 			client.actionData[action] <- msg[strIndex+5:]
-			utils.LogPrint("get_message:", msg[strIndex+5:])
+			if len(msg) > 100 {
+				utils.LogPrint("get_message:", msg[strIndex+5:101]+"......")
+			} else {
+				utils.LogPrint("get_message:", msg[strIndex+5:])
+			}
+
 		} else {
 			log.Error(msg, "message error")
 		}
@@ -134,37 +130,44 @@ func wsTest(c *gin.Context) {
 	}(testClient)
 }
 
-// GQueryFunc 发送请求到客户端
-func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string) {
-	WriteDate := Message{Param: param, Action: funcName}
-	data, _ := json.Marshal(WriteDate)
-	clientWs := c.clientWs
-	if c.actionData[funcName] == nil {
-		c.actionData[funcName] = make(chan string, 1) //此次action初始化1个消息
+func GetCookie(c *gin.Context) {
+	var RequestParam ApiParam
+	if err := c.ShouldBind(&RequestParam); err != nil {
+		GinJsonMsg(c, http.StatusBadRequest, err.Error())
+		return
 	}
-	gm.Lock()
-	err := clientWs.WriteMessage(1, data)
-	gm.Unlock()
-	if err != nil {
-		fmt.Println(err, "写入数据失败")
+	group := c.Query("group")
+	if group == "" {
+		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
+		return
 	}
-	resultFlag := false
-	for i := 0; i < config.DefaultTimeout*10; i++ {
-		if len(c.actionData[funcName]) > 0 {
-			res := <-c.actionData[funcName]
-			resChan <- res
-			resultFlag = true
-			break
-		}
-		time.Sleep(time.Millisecond * 100)
+
+	clientId := RequestParam.ClientId
+	client := getRandomClient(group, clientId)
+
+	c3 := make(chan string, 1)
+	go client.GQueryFunc("_execjs", utils.ConcatCode("document.cookie"), c3)
+	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c3})
+}
+
+func GetHtml(c *gin.Context) {
+	var RequestParam ApiParam
+	if err := c.ShouldBind(&RequestParam); err != nil {
+		GinJsonMsg(c, http.StatusBadRequest, err.Error())
+		return
 	}
-	// 循环完了还是没有数据，那就超时退出
-	if true != resultFlag {
-		resChan <- "黑脸怪：timeout"
+	group := c.Query("group")
+	if group == "" {
+		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
+		return
 	}
-	defer func() {
-		close(resChan)
-	}()
+
+	clientId := RequestParam.ClientId
+	client := getRandomClient(group, clientId)
+
+	c3 := make(chan string, 1)
+	go client.GQueryFunc("_execjs", utils.ConcatCode("document.documentElement.outerHTML"), c3)
+	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c3})
 }
 
 // GetResult 接收web请求参数，并发给客户端获取结果
@@ -195,40 +198,6 @@ func getResult(c *gin.Context) {
 	go client.GQueryFunc(action, RequestParam.Param, c2)
 	//把管道传过去，获得值就返回了
 	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c2})
-
-}
-
-func getRandomClient(group string, clientId string) *Clients {
-	var client *Clients
-	// 不传递clientId时候，从group分组随便拿一个
-	if clientId != "" {
-		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
-		if ok == false {
-			return nil
-		}
-		client, _ = clientName.(*Clients)
-		return client
-	}
-	groupClients := make([]*Clients, 0)
-	//循环读取syncMap 获取group名字的
-	hlSyncMap.Range(func(_, value interface{}) bool {
-		tmpClients, ok := value.(*Clients)
-		if !ok {
-			return true
-		}
-		if tmpClients.clientGroup == group {
-			groupClients = append(groupClients, tmpClients)
-		}
-		return true
-	})
-	if len(groupClients) == 0 {
-		return nil
-	}
-	// 使用随机数发生器
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	randomIndex := r.Intn(len(groupClients))
-	client = groupClients[randomIndex]
-	return client
 
 }
 
@@ -322,17 +291,6 @@ func InitAPI(conf config.ConfStruct) {
 
 	setJsRpcRouters(router) // 核心路由
 
-	srv := &http.Server{
-		Addr:    conf.BasicListen,
-		Handler: router,
-	}
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
-
 	var sb strings.Builder
 	sb.WriteString("当前监听地址：")
 	sb.WriteString(conf.BasicListen)
@@ -346,11 +304,8 @@ func InitAPI(conf config.ConfStruct) {
 	}
 	log.Infoln(sb.String())
 
-	//err := router.Run(conf.BasicListen)
-
-	// 设置优雅退出  按 ctrl+c 退出程序的时候 不会报错的那种
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
+	err := router.Run(conf.BasicListen)
+	if err != nil {
+		log.Errorln("服务启动失败..")
+	}
 }
