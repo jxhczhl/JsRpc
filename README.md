@@ -71,6 +71,8 @@
 - `/wst`  :ws测试使用-发啥回啥 (ws | wss)
 - `/go` :获取数据的接口  (get | post)
 - `/execjs` :传递jscode给浏览器执行 (get | post)
+- `/page/cookie` :直接获取当前页面的cookie (get)
+- `/page/html` :获取当前页面的html (get)
 
 说明：接口用?group分组 如 "ws://127.0.0.1:12080/ws?group={}"
 以及可选参数 clientId
