@@ -312,6 +312,17 @@ func InitAPI(conf config.ConfStruct) {
 	if conf.HttpsServices.IsEnable {
 		sb.WriteString(" https监听地址：")
 		sb.WriteString(conf.HttpsServices.HttpsListen)
+		router.Use(tlsHandler(conf.HttpsServices.HttpsListen))
+		go func() {
+			err := router.RunTLS(
+				conf.HttpsServices.HttpsListen,
+				conf.HttpsServices.PemPath,
+				conf.HttpsServices.KeyPath,
+			)
+			if err != nil {
+				log.Error(err)
+			}
+		}()
 	}
 	log.Infoln(sb.String())
 
