@@ -3,6 +3,7 @@ package core
 import (
 	"JsRpc/config"
 	"JsRpc/utils"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -23,10 +24,15 @@ var (
 
 // Message 请求和传递请求
 type Message struct {
-	Action string `json:"action"`
-	Param  string `json:"param"`
+	Action    string `json:"action"`
+	MessageId string `json:"message_id"`
+	Param     string `json:"param"`
 }
-
+type MessageResponse struct {
+	Action       string `json:"action"`
+	MessageId    string `json:"message_id"`
+	ResponseData string `json:"response_data"`
+}
 type ApiParam struct {
 	GroupName string `form:"group" json:"group"`
 	ClientId  string `form:"clientId" json:"clientId"`
@@ -39,7 +45,7 @@ type ApiParam struct {
 type Clients struct {
 	clientGroup string
 	clientId    string
-	actionData  map[string]chan string
+	actionData  map[string]map[string]chan string // {"action":{"消息id":消息管道}}
 	clientWs    *websocket.Conn
 }
 
@@ -48,7 +54,7 @@ func NewClient(group string, uid string, ws *websocket.Conn) *Clients {
 	return &Clients{
 		clientGroup: group,
 		clientId:    uid,
-		actionData:  make(map[string]chan string, 1), // action有消息后就保存到chan里
+		actionData:  make(map[string]map[string]chan string), // action有消息后就保存到chan里
 		clientWs:    ws,
 	}
 }
@@ -83,20 +89,21 @@ func ws(c *gin.Context) {
 		if err != nil {
 			break
 		}
-		msg := string(message)
-		check := []uint8{104, 108, 94, 95, 94}
-		strIndex := strings.Index(msg, string(check))
-		if strIndex >= 1 {
-			action := msg[:strIndex]
-			client.actionData[action] <- msg[strIndex+5:]
-			if len(msg) > 100 {
-				utils.LogPrint("get_message:", msg[strIndex+5:101]+"......")
-			} else {
-				utils.LogPrint("get_message:", msg[strIndex+5:])
-			}
-
+		// 将得到的数据转成结构体
+		messageStruct := MessageResponse{}
+		err = json.Unmarshal(message, &messageStruct)
+		if err != nil {
+			log.Error("接收到的消息不是设定的格式 不做处理", err)
+		}
+		action := messageStruct.Action
+		messageId := messageStruct.MessageId
+		msg := messageStruct.ResponseData
+		// 这里直接给管道塞数据，那么之前发送的时候要初始化好
+		client.actionData[action][messageId] <- msg
+		if len(msg) > 100 {
+			utils.LogPrint("get_message:", msg[:101]+"......")
 		} else {
-			log.Error(msg, "message error")
+			utils.LogPrint("get_message:", msg)
 		}
 
 	}

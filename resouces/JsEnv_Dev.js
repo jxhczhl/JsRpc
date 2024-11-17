@@ -69,42 +69,42 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
     try {
         var result = JSON.parse(requestJson)
     } catch (error) {
-        console.log("catch error", requestJson);
-        result = transjson(requestJson)
-    }
-    //console.log(result)
-    if (!result['action']) {
-        this.sendResult('', 'need request param {action}');
+        console.log("请求信息解析错误", requestJson);
         return
     }
-    var action = result["action"]
+    if (!result['action'] || !result["message_id"]) {
+        console.warn('没有方法或者消息id,不处理');
+        return
+    }
+    var action = result["action"], message_id = result["message_id"]
     var theHandler = this.handlers[action];
     if (!theHandler) {
-        this.sendResult(action, 'action not found');
+        this.sendResult(action, message_id, 'action没找到');
         return
     }
     try {
         if (!result["param"]) {
             theHandler(function (response) {
-                _this.sendResult(action, response);
+                _this.sendResult(action, message_id, response);
             })
             return
         }
         var param = result["param"]
         try {
             param = JSON.parse(param)
-        } catch (e) {}
+        } catch (e) {
+        }
         theHandler(function (response) {
-            _this.sendResult(action, response);
+            _this.sendResult(action, message_id, response);
         }, param)
 
     } catch (e) {
         console.log("error: " + e);
-        _this.sendResult(action, e);
+        _this.sendResult(action, message_id, e);
     }
 }
 
-Hlclient.prototype.sendResult = function (action, e) {
+Hlclient.prototype.sendResult = function (action, message_id, e) {
     if (typeof e === 'object' && e !== null) {
         try {
             e = JSON.stringify(e)
@@ -112,17 +112,6 @@ Hlclient.prototype.sendResult = function (action, e) {
             console.log(v)//不是json无需操作
         }
     }
-    this.send(action + atob("aGxeX14") + e);
+    this.send(JSON.stringify({"action": action, "message_id": message_id, "response_data": e}));
 }
 
-function transjson(formdata) {
-    var regex = /"action":(?<actionName>.*?),/g
-    var actionName = regex.exec(formdata).groups.actionName
-    stringfystring = formdata.match(/{..data..:.*..\w+..:\s...*?..}/g).pop()
-    stringfystring = stringfystring.replace(/\\"/g, '"')
-    paramstring = JSON.parse(stringfystring)
-    tens = `{"action":` + actionName + `,"param":{}}`
-    tjson = JSON.parse(tens)
-    tjson.param = paramstring
-    return tjson
-}

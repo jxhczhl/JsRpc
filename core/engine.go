@@ -2,6 +2,7 @@ package core
 
 import (
 	"JsRpc/config"
+	"JsRpc/utils"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -10,11 +11,16 @@ import (
 
 // GQueryFunc 发送请求到客户端
 func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string) {
-	WriteData := Message{Param: param, Action: funcName}
+	MessageId := utils.GetUUID()
+	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
 	data, _ := json.Marshal(WriteData)
 	clientWs := c.clientWs
+	// 先判断action是否需要初始化
 	if c.actionData[funcName] == nil {
-		c.actionData[funcName] = make(chan string, 1) //此次action初始化1个消息
+		c.actionData[funcName] = make(map[string]chan string)
+	}
+	if c.actionData[funcName][MessageId] == nil {
+		c.actionData[funcName][MessageId] = make(chan string, 1) //此次action初始化1个消息
 	}
 	gm.Lock()
 	err := clientWs.WriteMessage(1, data)
@@ -24,8 +30,8 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	}
 	resultFlag := false
 	for i := 0; i < config.DefaultTimeout*10; i++ {
-		if len(c.actionData[funcName]) > 0 {
-			res := <-c.actionData[funcName]
+		if len(c.actionData[funcName][MessageId]) > 0 {
+			res := <-c.actionData[funcName][MessageId]
 			resChan <- res
 			resultFlag = true
 			break
@@ -38,6 +44,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	}
 	defer func() {
 		close(resChan)
+		delete(c.actionData[funcName], MessageId)
 	}()
 }
 
