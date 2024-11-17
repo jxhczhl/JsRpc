@@ -261,7 +261,19 @@ func getList(c *gin.Context) {
 }
 
 func index(c *gin.Context) {
-	c.String(200, "你好，我是黑脸怪~")
+	//c.String(200, "你好，我是黑脸怪~")
+	htmlContent := `
+		<!DOCTYPE html>
+		<html>
+		<head><title>欢迎使用JsRpc</title></head>
+		<body>
+			你好，我是黑脸怪~
+			<p>微信：hl98_cn</p>
+		</body>
+		</html>
+		`
+	// 返回 HTML 页面
+	c.Data(200, "text/html; charset=utf-8", []byte(htmlContent))
 }
 
 func tlsHandler(HttpsHost string) gin.HandlerFunc {
