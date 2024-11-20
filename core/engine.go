@@ -15,6 +15,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
 	data, _ := json.Marshal(WriteData)
 	clientWs := c.clientWs
+	gm.Lock()
 	// 先判断action是否需要初始化
 	if c.actionData[funcName] == nil {
 		c.actionData[funcName] = make(map[string]chan string)
@@ -22,30 +23,23 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	if c.actionData[funcName][MessageId] == nil {
 		c.actionData[funcName][MessageId] = make(chan string, 1) //此次action初始化1个消息
 	}
-	gm.Lock()
 	err := clientWs.WriteMessage(1, data)
 	gm.Unlock()
 	if err != nil {
 		fmt.Println(err, "写入数据失败")
 	}
-	resultFlag := false
-	for i := 0; i < config.DefaultTimeout*10; i++ {
-		if len(c.actionData[funcName][MessageId]) > 0 {
-			res := <-c.actionData[funcName][MessageId]
-			resChan <- res
-			resultFlag = true
-			break
-		}
-		time.Sleep(time.Millisecond * 100)
-	}
-	// 循环完了还是没有数据，那就超时退出
-	if true != resultFlag {
+	select {
+	case res := <-c.actionData[funcName][MessageId]:
+		resChan <- res
+	case <-time.After(time.Duration(config.DefaultTimeout) * time.Second):
 		resChan <- "黑脸怪：timeout"
 	}
-	defer func() {
-		close(resChan)
-		delete(c.actionData[funcName], MessageId)
-	}()
+	// 清理资源
+	gm.Lock()
+	delete(c.actionData[funcName], MessageId)
+	gm.Unlock()
+
+	close(resChan)
 }
 
 func getRandomClient(group string, clientId string) *Clients {
