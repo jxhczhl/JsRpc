@@ -71,7 +71,7 @@ func ws(c *gin.Context) {
 	if group == "" {
 		return
 	}
-	//没有给客户端id的话 就用时间戳给他生成一个
+	//没有给客户端id的话 就用uuid给他生成一个
 	if clientId == "" {
 		clientId = utils.GetUUID()
 	}
@@ -83,6 +83,11 @@ func ws(c *gin.Context) {
 	client := NewClient(group, clientId, wsClient)
 	hlSyncMap.Store(group+"->"+clientId, client)
 	utils.LogPrint("新上线group:" + group + ",clientId:->" + clientId)
+	clientNameJson := `{"registerId":"` + clientId + `"}`
+	err = wsClient.WriteMessage(1, []byte(clientNameJson))
+	if err != nil {
+		log.Warning("注册成功，但发送回执信息失败")
+	}
 	for {
 		//等待数据
 		_, message, err := wsClient.ReadMessage()
@@ -141,49 +146,40 @@ func wsTest(c *gin.Context) {
 	}(testClient)
 }
 
-func GetCookie(c *gin.Context) {
+func checkRequestParam(c *gin.Context) (*Clients, string) {
 	var RequestParam ApiParam
 	if err := c.ShouldBind(&RequestParam); err != nil {
-		GinJsonMsg(c, http.StatusBadRequest, err.Error())
-		return
+		return &Clients{}, err.Error()
 	}
 	group := c.Query("group")
 	if group == "" {
-		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
-		return
+		return &Clients{}, "需要传入group"
 	}
-
 	clientId := RequestParam.ClientId
 	client := getRandomClient(group, clientId)
 	if client == nil {
-		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+		return &Clients{}, "没有找到对应的group或clientId,请通过list接口查看现有的注入"
+	}
+	return client, ""
+}
+
+func GetCookie(c *gin.Context) {
+	client, errorStr := checkRequestParam(c)
+	if errorStr != "" {
+		GinJsonMsg(c, http.StatusBadRequest, errorStr)
 		return
 	}
-
 	c3 := make(chan string, 1)
 	go client.GQueryFunc("_execjs", utils.ConcatCode("document.cookie"), c3)
 	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c3})
 }
 
 func GetHtml(c *gin.Context) {
-	var RequestParam ApiParam
-	if err := c.ShouldBind(&RequestParam); err != nil {
-		GinJsonMsg(c, http.StatusBadRequest, err.Error())
+	client, errorStr := checkRequestParam(c)
+	if errorStr != "" {
+		GinJsonMsg(c, http.StatusBadRequest, errorStr)
 		return
 	}
-	group := c.Query("group")
-	if group == "" {
-		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
-		return
-	}
-
-	clientId := RequestParam.ClientId
-	client := getRandomClient(group, clientId)
-	if client == nil {
-		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
-		return
-	}
-
 	c3 := make(chan string, 1)
 	go client.GQueryFunc("_execjs", utils.ConcatCode("document.documentElement.outerHTML"), c3)
 	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c3})
@@ -196,21 +192,14 @@ func getResult(c *gin.Context) {
 		GinJsonMsg(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	group := RequestParam.GroupName
-	if group == "" {
-		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
-		return
-	}
 	action := RequestParam.Action
 	if action == "" {
 		GinJsonMsg(c, http.StatusOK, "请传入action来调用客户端方法")
 		return
 	}
-	clientId := RequestParam.ClientId
-	client := getRandomClient(group, clientId)
-	if client == nil {
-		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+	client, errorStr := checkRequestParam(c)
+	if errorStr != "" {
+		GinJsonMsg(c, http.StatusBadRequest, errorStr)
 		return
 	}
 	c2 := make(chan string, 1)
@@ -228,20 +217,15 @@ func execjs(c *gin.Context) {
 	}
 	Action := "_execjs"
 	//获取参数
-	group := RequestParam.GroupName
-	if group == "" {
-		GinJsonMsg(c, http.StatusBadRequest, "需要传入group")
-		return
-	}
+
 	JsCode := RequestParam.Code
 	if JsCode == "" {
 		GinJsonMsg(c, http.StatusBadRequest, "请传入代码")
 		return
 	}
-	clientId := RequestParam.ClientId
-	client := getRandomClient(group, clientId)
-	if client == nil {
-		GinJsonMsg(c, http.StatusBadRequest, "没有找到对应的group或clientId,请通过list接口查看现有的注入")
+	client, errorStr := checkRequestParam(c)
+	if errorStr != "" {
+		GinJsonMsg(c, http.StatusBadRequest, errorStr)
 		return
 	}
 	c2 := make(chan string)

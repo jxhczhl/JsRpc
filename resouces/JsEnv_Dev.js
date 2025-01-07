@@ -1,4 +1,4 @@
-function Hlclient(wsURL) {
+var rpc_client_id, Hlclient = function (wsURL) {
     this.wsURL = wsURL;
     this.handlers = {
         _execjs: function (resolve, param) {
@@ -8,7 +8,6 @@ function Hlclient(wsURL) {
             } else {
                 resolve(res)
             }
-
         }
     };
     this.socket = undefined;
@@ -17,8 +16,10 @@ function Hlclient(wsURL) {
     }
     this.connect()
 }
-
 Hlclient.prototype.connect = function () {
+    if (this.wsURL.indexOf("clientId=") === -1 && rpc_client_id) {
+        this.wsURL += "&clientId=" + rpc_client_id
+    }
     console.log('begin of connect to wsURL: ' + this.wsURL);
     var _this = this;
     try {
@@ -43,13 +44,11 @@ Hlclient.prototype.connect = function () {
     });
     this.socket.addEventListener('error', (event) => {
         console.error('rpc连接出错,请检查是否打开服务端:', event.error);
-    });
-
+    })
 };
 Hlclient.prototype.send = function (msg) {
     this.socket.send(msg)
 }
-
 Hlclient.prototype.regAction = function (func_name, func) {
     if (typeof func_name !== 'string') {
         throw new Error("an func_name must be string");
@@ -60,16 +59,17 @@ Hlclient.prototype.regAction = function (func_name, func) {
     console.log("register func_name: " + func_name);
     this.handlers[func_name] = func;
     return true
-
 }
-
-//收到消息后这里处理，
 Hlclient.prototype.handlerRequest = function (requestJson) {
     var _this = this;
     try {
         var result = JSON.parse(requestJson)
     } catch (error) {
         console.log("请求信息解析错误", requestJson);
+        return
+    }
+    if (result["registerId"]) {
+        rpc_client_id = result['registerId']
         return
     }
     if (!result['action'] || !result["message_id"]) {
@@ -97,13 +97,11 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
         theHandler(function (response) {
             _this.sendResult(action, message_id, response);
         }, param)
-
     } catch (e) {
         console.log("error: " + e);
         _this.sendResult(action, message_id, e);
     }
 }
-
 Hlclient.prototype.sendResult = function (action, message_id, e) {
     if (typeof e === 'object' && e !== null) {
         try {
@@ -114,4 +112,3 @@ Hlclient.prototype.sendResult = function (action, message_id, e) {
     }
     this.send(JSON.stringify({"action": action, "message_id": message_id, "response_data": e}));
 }
-
