@@ -4,34 +4,43 @@ import (
 	"JsRpc/config"
 	"JsRpc/utils"
 	"encoding/json"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
 )
 
 // GQueryFunc 发送请求到客户端
 func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string) {
-	MessageId := utils.GetUUID()
-	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
-	data, _ := json.Marshal(WriteData)
-	clientWs := c.clientWs
-	gm.Lock()
-	// 先判断action是否需要初始化
 	if c.actionData[funcName] == nil {
 		c.actionData[funcName] = make(map[string]chan string)
 	}
-	if c.actionData[funcName][MessageId] == nil {
-		c.actionData[funcName][MessageId] = make(chan string, 1) //此次action初始化1个消息
+	MessageId := ""
+	gm.Lock()
+	for {
+		MessageId = utils.GetUUID()
+		// 先判断action是否需要初始化
+		if c.actionData[funcName][MessageId] == nil {
+			c.actionData[funcName][MessageId] = make(chan string, 1) //此次action初始化1个消息
+			//只有不存在的MessageId才会继续，
+			break
+		} else {
+			utils.LogPrint("存在的消息id,跳过")
+		}
 	}
-	err := clientWs.WriteMessage(1, data)
 	gm.Unlock()
+	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
+	data, _ := json.Marshal(WriteData)
+	clientWs := c.clientWs
+	err := clientWs.WriteMessage(1, data)
 	if err != nil {
-		fmt.Println(err, "写入数据失败")
+		log.Error(err, "写入数据失败")
+		resChan <- "rpc发送数据失败"
 	}
 	select {
 	case res := <-c.actionData[funcName][MessageId]:
 		resChan <- res
 	case <-time.After(time.Duration(config.DefaultTimeout) * time.Second):
+		utils.LogPrint(MessageId + "超时了")
 		resChan <- "黑脸怪：timeout"
 	}
 	// 清理资源

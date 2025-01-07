@@ -99,11 +99,15 @@ func ws(c *gin.Context) {
 		messageId := messageStruct.MessageId
 		msg := messageStruct.ResponseData
 		// 这里直接给管道塞数据，那么之前发送的时候要初始化好
-		client.actionData[action][messageId] <- msg
-		if len(msg) > 100 {
-			utils.LogPrint("get_message:", msg[:101]+"......")
+		if client.actionData[action][messageId] == nil {
+			log.Warning("当前消息id：", messageId, " 已被超时释放，回调的数据不做处理")
 		} else {
-			utils.LogPrint("get_message:", msg)
+			client.actionData[action][messageId] <- msg
+		}
+		if len(msg) > 100 {
+			utils.LogPrint("id", messageId, "get_message:", msg[:101]+"......")
+		} else {
+			utils.LogPrint("id", messageId, "get_message:", msg)
 		}
 
 	}
