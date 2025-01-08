@@ -151,7 +151,7 @@ func checkRequestParam(c *gin.Context) (*Clients, string) {
 	if err := c.ShouldBind(&RequestParam); err != nil {
 		return &Clients{}, err.Error()
 	}
-	group := c.Query("group")
+	group := RequestParam.GroupName
 	if group == "" {
 		return &Clients{}, "需要传入group"
 	}
