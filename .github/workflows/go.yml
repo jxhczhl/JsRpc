@@ -8,9 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30 # 设置超时时间为 30 分钟
     strategy:
       matrix:
-        os: [windows, macos, linux]
+        os: [windows, darwin, linux]
         arch: [amd64, arm64]
     steps:
       - name: Checkout code
