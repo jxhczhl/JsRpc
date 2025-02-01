@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
+	"sync"
 	"time"
 )
+
+var wsMutex sync.Mutex
 
 // GQueryFunc 发送请求到客户端
 func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string) {
@@ -31,6 +34,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
 	data, _ := json.Marshal(WriteData)
 	clientWs := c.clientWs
+	wsMutex.Lock()
 	err := clientWs.WriteMessage(1, data)
 	if err != nil {
 		log.Error(err, "写入数据失败")
@@ -43,6 +47,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 		utils.LogPrint(MessageId + "超时了")
 		resChan <- "黑脸怪：timeout"
 	}
+	wsMutex.Unlock()
 	// 清理资源
 	gm.Lock()
 	delete(c.actionData[funcName], MessageId)
