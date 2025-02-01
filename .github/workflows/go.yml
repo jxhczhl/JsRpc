@@ -23,7 +23,7 @@ jobs:
 
       - name: Build
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o myapp-${{ matrix.os }}-${{ matrix.arch }} ./cmd/myapp
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o myapp-${{ matrix.os }}-${{ matrix.arch }}
           tar -czvf myapp-${{ matrix.os }}-${{ matrix.arch }}.tar.gz myapp-${{ matrix.os }}-${{ matrix.arch }}
 
       - name: Upload Release Asset
