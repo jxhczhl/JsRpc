@@ -1,0 +1,35 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [windows, macos, linux]
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        run: |
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o myapp-${{ matrix.os }}-${{ matrix.arch }} ./cmd/myapp
+          tar -czvf myapp-${{ matrix.os }}-${{ matrix.arch }}.tar.gz myapp-${{ matrix.os }}-${{ matrix.arch }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./myapp-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          asset_name: myapp-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          asset_content_type: application/gzip
