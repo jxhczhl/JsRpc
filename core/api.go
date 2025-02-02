@@ -18,7 +18,7 @@ var (
 	upGrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
-	gm        = &sync.Mutex{}
+	rwMu      sync.RWMutex
 	hlSyncMap sync.Map
 )
 
@@ -47,6 +47,17 @@ type Clients struct {
 	clientId    string
 	actionData  map[string]map[string]chan string // {"action":{"消息id":消息管道}}
 	clientWs    *websocket.Conn
+}
+
+func (c *Clients) readFromMap(funcName string, MessageId string) chan string {
+	rwMu.RLock()
+	defer rwMu.RUnlock()
+	return c.actionData[funcName][MessageId]
+}
+func (c *Clients) writeToMap(funcName string, MessageId string, msg string) {
+	rwMu.Lock()
+	defer rwMu.Unlock()
+	c.actionData[funcName][MessageId] <- msg
 }
 
 // NewClient  initializes a new Clients instance
@@ -104,10 +115,10 @@ func ws(c *gin.Context) {
 		messageId := messageStruct.MessageId
 		msg := messageStruct.ResponseData
 		// 这里直接给管道塞数据，那么之前发送的时候要初始化好
-		if client.actionData[action][messageId] == nil {
+		if client.readFromMap(action, messageId) == nil {
 			log.Warning("当前消息id：", messageId, " 已被超时释放，回调的数据不做处理")
 		} else {
-			client.actionData[action][messageId] <- msg
+			client.writeToMap(action, messageId, msg)
 		}
 		if len(msg) > 100 {
 			utils.LogPrint("id", messageId, "get_message:", msg[:101]+"......")
