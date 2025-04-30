@@ -20,7 +20,9 @@ func ReadConf() ConfStruct {
 
 	conf, err := initConf(ConfigPath)
 	if err != nil {
-		log.Warning("读取配置文件错误，将使用默认配置运行。 ", err.Error())
+		log.Warning(
+			"使用默认配置运行 ", err.Error(),
+			" 配置参考 https://github.com/jxhczhl/JsRpc/blob/main/config.yaml")
 	}
 	return conf
 }
@@ -33,6 +35,10 @@ func initConf(path string) (ConfStruct, error) {
 			HttpsListen: `:12443`,
 		},
 		DefaultTimeOut: DefaultTimeout,
+		RouterReplace: RouterReplace{
+			IsEnable:     false,
+			ReplaceRoute: "",
+		},
 	}
 	if !utils.IsExists(path) {
 		return defaultConf, errors.New("config path not found")
@@ -55,13 +61,14 @@ func initConf(path string) (ConfStruct, error) {
 }
 
 type ConfStruct struct {
-	BasicListen    string      `yaml:"BasicListen"`
-	HttpsServices  HttpsConfig `yaml:"HttpsServices"`
-	DefaultTimeOut int         `yaml:"DefaultTimeOut"`
-	CloseLog       bool        `yaml:"CloseLog"`
-	CloseWebLog    bool        `yaml:"CloseWebLog"`
-	Mode           string      `yaml:"Mode"`
-	Cors           bool        `yaml:"Cors"`
+	BasicListen    string        `yaml:"BasicListen"`
+	HttpsServices  HttpsConfig   `yaml:"HttpsServices"`
+	DefaultTimeOut int           `yaml:"DefaultTimeOut"`
+	CloseLog       bool          `yaml:"CloseLog"`
+	CloseWebLog    bool          `yaml:"CloseWebLog"`
+	Mode           string        `yaml:"Mode"`
+	Cors           bool          `yaml:"Cors"`
+	RouterReplace  RouterReplace `yaml:"RouterReplace"`
 }
 
 // HttpsConfig 代表HTTPS相关配置的结构体
@@ -70,4 +77,9 @@ type HttpsConfig struct {
 	HttpsListen string `yaml:"HttpsListen"`
 	PemPath     string `yaml:"PemPath"`
 	KeyPath     string `yaml:"KeyPath"`
+}
+
+type RouterReplace struct {
+	IsEnable     bool   `yaml:"IsEnable"`
+	ReplaceRoute string `yaml:"ReplaceRoute"`
 }

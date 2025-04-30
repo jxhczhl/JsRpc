@@ -1,6 +1,9 @@
 package core
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"strings"
+)
 
 func CorsMiddleWare() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -30,4 +33,22 @@ func CorsMiddleWare() gin.HandlerFunc {
 		}
 	}
 
+}
+func RouteReplace(router *gin.Engine, routeStr string) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		// 去掉 前缀
+		newPath := strings.TrimPrefix(context.Request.URL.Path, routeStr)
+		if newPath == context.Request.URL.Path {
+			// 如果没有匹配到前缀，直接放行
+			context.Next()
+			return
+		}
+		if newPath == "" {
+			newPath = "/"
+		}
+		// 修改请求路径并重新处理
+		context.Request.URL.Path = newPath
+		router.HandleContext(context)
+		context.Abort()
+	}
 }

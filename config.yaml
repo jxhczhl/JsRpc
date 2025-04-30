@@ -10,3 +10,6 @@ CloseLog: false # 关闭一些日志
 CloseWebLog: false # 关闭Web服务访问的日志
 Mode: release  # release:发布版本   debug:调试版   test:测试版本
 Cors: false    # 是否开启CorsMiddleWare中间件--默认不开启
+RouterReplace:
+  IsEnable: false # 是否启用路径替换
+  ReplaceRoute: "/aaa" # 将访问aaa的路径替换成/根路径，访问/aaa/go 相当于直接访问/go

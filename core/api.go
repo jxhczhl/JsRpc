@@ -307,6 +307,9 @@ func setupRouters(conf config.ConfStruct) *gin.Engine {
 	if conf.Cors { // 是否开启cors中间件
 		router.Use(CorsMiddleWare())
 	}
+	if conf.RouterReplace.IsEnable {
+		router.Use(RouteReplace(router, conf.RouterReplace.ReplaceRoute))
+	}
 	return router
 }
 
