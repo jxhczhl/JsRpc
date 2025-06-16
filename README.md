@@ -1,3 +1,24 @@
+
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+
+#### 求内推 · base 深圳 爬虫
+**联系方式**：  
+邮箱：z@hl98.cn  
+微信：hl98_cn  
+
+最近在看机会
+如有深圳爬虫相关岗位机会，请联系！
+
+</div>
+
+---
+
+### 支持作者
+如果觉得我的开源项目有帮助，欢迎扫码支持：  
+
+<img width="250" alt="image" src="https://github.com/user-attachments/assets/04420785-ca81-474b-aa19-fc83ca7363a8">
+  
 ```dart
 
        __       _______..______      .______     ______ 
