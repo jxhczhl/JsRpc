@@ -280,11 +280,16 @@ http://127.0.0.1:12080/go?group=zzz&action=hello&clientId=hliang1713564563459  �
         https://mp.weixin.qq.com/s/nvQNV33QkzFQtFscDqnXWw
 
 ## 常见问题
-
     1. websocket连接失败
       内容安全策略（Content Security Policy）
       Refused to connect to 'xx.xx' because it violates the following Content Security Policy directive: "connect-src 'self' 
-      这个网站不让连接websocket，可以用油猴注入使用，或者更改网页响应头
+      这个网站不让连接websocket
+      -------------------------------------------------
+      最简单的方式-使用插件绕过，可谷歌搜索 Disable Content Security Policy  
+      推荐：https://chromewebstore.google.com/detail/disable-content-security/eckgajjlhojckchohogcblfjhpfdmoge  
+      -------------------------------------------------
+      或者可以用油猴注入使用，或更改网页响应头
+      
     2. 异步操作获取值
       [参考](https://github.com/jxhczhl/JsRpc/issues/12)
 
