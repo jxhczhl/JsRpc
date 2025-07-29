@@ -9,11 +9,34 @@
 
 ```
 
+## 交流平台
 
+为了建立一个更好的 jsrpc 交流平台，我们与猿人学的平哥共同创建了一个微信交流群。  
+希望借此机会，帮助广大开发者更深入地了解和使用 jsrpc。
+
+### 加入方式
+请使用微信扫描以下二维码并备注“jsrpc”以申请加入我们的交流群。
+
+### 交流群的内容
+在这个交流群里，我们将：
+- 及时分享 jsrpc 的使用方法和实践案例。
+- 发布工具的后续功能更新和版本维护信息。
+- 邀请多位长期关注 jsrpc 的技术创作者共同参与内容交流和经验分享。
+
+### 特别资源
+群内将提供更多的jsrpc 实操案例 、使用方法 及常见问题 汇总等资料，
+
+欢迎感兴趣的朋友踊跃加入，共同构建一个开放、实用的jsrpc工具交流社区。
+
+<img width="250" alt="王平" src="https://github.com/user-attachments/assets/a9586ac9-a8b7-4322-b3c2-00d2841f6e48" />  
+
+&nbsp; 
+&nbsp; 
+
+---
 -- js逆向之远程调用(rpc)免去抠代码补环境
 
-> 黑脸怪
-- [交流平台](#交流平台)
+> 作者-黑脸怪
 - [目录结构](#目录结构)
 - [基本介绍](#基本介绍)
 - [实现](#实现)
@@ -28,22 +51,8 @@
       - [远程调用2：带参获取值](#远程调用2带参获取值)
       - [远程调用3：带多个参获 并且使用post方式 取值](#远程调用3带多个参获-并且使用post方式-取值)
       - [远程调用4：获取页面基础信息](#远程调用4获取页面基础信息)
-- [食用案例-爬虫练手-xx网第15题](#食用案例-爬虫练手-xx网第15题)
-- [其他说明](#其他说明)
-- [BUG修复](#bug修复)
-- [其他案例](#其他案例)
-- [常见问题](#常见问题)
-- [TODO](#todo)
 
 
-## 交流平台
-
-为方便广大开发者更好地了解和使用 jsprc，我与猿人学平哥合作，我们共同建立了一个微信交流群。  扫码并备注 “jsrpc” 即可申请加入。  
-在这个交流群中，我们会在群中优先分享工具的使用方法、实践案例，以及后续功能的更新与版本维护信息。  
-同时，平哥也邀请了多位长期关注 jsrpc 的技术创作者加入，共同参与内容交流、经验分享以及共同对项目生态进行维护。  
-欢迎感兴趣的朋友加入群聊，共建一个开放、实用的 jsrpc 工具交流社区。  
-
-<img width="250" alt="王平" src="https://github.com/user-attachments/assets/a9586ac9-a8b7-4322-b3c2-00d2841f6e48" />
 
 ## 目录结构
 
@@ -219,83 +228,10 @@ resp = requests.get("http://127.0.0.1:12080/page/cookie?group=zzz")   # 直接�
 list接口可查看当前注入的客户端信息  
 <img width="321" alt="image" src="https://github.com/jxhczhl/JsRpc/assets/41224971/5b2ac7af-f6f0-4569-ac64-553ea41be387">
 
-## 食用案例-爬虫练手-xx网第15题
+---
+##### 作者是个人开发者，开发和写文档工作量繁重。
 
-    本题解是把它ajax获取数据那一个函数都复制下来，然后控制台调用这样子~
-
-    1.f12查看请求，跟进去 找到ajax那块，可以看到call函数就是主要的ajax发包 输入页数就可以，那我们复制这个函数里面的代码备用
-
-![image](https://user-images.githubusercontent.com/41224971/134793093-bac742e9-2f66-4fe4-b98b-7769d7379350.png)
-
-    2.先在控制台粘贴我的js环境，再注入一个rpc链接 注册一个call方法，名字自定义 第二个参数粘贴上面call的代码，小小修改一下
-       先定义num=param 这样就传参进来了，再定义一个变量来保存获取到的数据，resolve(变量) 就是发送。完了就注入好了，可以把f12关掉了
-
-![image](https://user-images.githubusercontent.com/41224971/134795740-c62fce0d-7271-4b34-a9e5-07515b99ab81.png)
-
-    3.调用接口就完事了，param就是传参页数
-
-![image](https://user-images.githubusercontent.com/41224971/134799668-3dd385e7-f44c-4fb3-85ff-00d78c674865.png)
-
-    控制台可以关，但是注入的网页不要关哦
-
-## 其他说明
-如果需要更改rpc服务的一些配置 比如端口号啊，https/wss服务，打印日志等  
-可以在执行文件的同路径 下载[config.yaml]([链接地址](https://github.com/jxhczhl/JsRpc/blob/main/config.yaml))文件配置  
-或使用-c参数指定配置文件路径  
-./JsRpc.exe -c config1.yaml  
-![image](https://github.com/jxhczhl/JsRpc/assets/41224971/ad023b16-65b5-418e-8494-e988bb02fb12)
-
-group说明  
-一般配置group名字不一样分开调用就行  
-特别情况，可以一样的group名，比如3个客户端(标签演示)执行加密，程序会随机一个客户端来执行并返回。  
-![image](https://github.com/jxhczhl/JsRpc/assets/41224971/6c111aea-1550-4683-a0c2-ed3c7e232d5a)
-请确保action也都是一样  
-![image](https://github.com/jxhczhl/JsRpc/assets/41224971/f6e0d713-6f5f-4d7d-b5e9-d7eb2d8316ae)
-多个group除了随机 还可以根据clientId指定客户端执行  
-http://127.0.0.1:12080/go?group=zzz&action=hello  
-http://127.0.0.1:12080/go?group=zzz&action=hello&clientId=hliang1713564563459  可选
-
-## BUG修复
-
-1.修复ResultSet函数，在并发处理环境下存在数据丢失，响应延迟等问题。
-
-[//]: # (2.handlerRequest处理POST携带部分param参数调用存在JSON反序列化错误，可以使用JsEnv_Dev.js去处理)
-
-## 其他案例
-
-    1. JsRpc实战-猿人学-反混淆刷题平台第20题（wasm）
-        https://mp.weixin.qq.com/s/DemSz2NRkYt9YL5fSUiMDQ
-    2. 网洛者-反反爬练习平台第七题（JSVMPZL - 初体验）
-        https://mp.weixin.qq.com/s/nvQNV33QkzFQtFscDqnXWw
-
-## 常见问题
-    1. websocket连接失败
-      内容安全策略（Content Security Policy）
-      Refused to connect to 'xx.xx' because it violates the following Content Security Policy directive: "connect-src 'self' 
-      这个网站不让连接websocket
-      -------------------------------------------------
-      最简单的方式-使用插件绕过，可谷歌搜索 Disable Content Security Policy  
-      推荐：https://chromewebstore.google.com/detail/disable-content-security/eckgajjlhojckchohogcblfjhpfdmoge  
-      -------------------------------------------------
-      或者可以用油猴注入使用，或更改网页响应头
-      
-    2. 异步操作获取值
-      [参考](https://github.com/jxhczhl/JsRpc/issues/12)
-
-
-## TODO
-
-- [ ] 异步方法调用
-```js
-demo.regAction('token', async (resolve) => {
-    let token = await grecaptcha.execute(0, { action: '' }).then(function (token) {
-        return token
-    });
-    resolve(token);
-})
-```
-- [ ] ssl Docker Deploy
-- [ ] K8s Deploy
+##### 如果本项目对您有所帮助，不妨打赏一下 :)
 
 
 <img width="250" alt="image" src="https://github.com/user-attachments/assets/04420785-ca81-474b-aa19-fc83ca7363a8">
