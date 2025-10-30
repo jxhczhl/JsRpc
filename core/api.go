@@ -45,6 +45,7 @@ type ApiParam struct {
 type Clients struct {
 	clientGroup string
 	clientId    string
+	clientIp    string                            // 客户端ip
 	actionData  map[string]map[string]chan string // {"action":{"消息id":消息管道}}
 	clientWs    *websocket.Conn
 }
@@ -61,12 +62,13 @@ func (c *Clients) writeToMap(funcName string, MessageId string, msg string) {
 }
 
 // NewClient  initializes a new Clients instance
-func NewClient(group string, uid string, ws *websocket.Conn) *Clients {
+func NewClient(group string, uid string, ws *websocket.Conn, clientIp string) *Clients {
 	return &Clients{
 		clientGroup: group,
 		clientId:    uid,
 		actionData:  make(map[string]map[string]chan string), // action有消息后就保存到chan里
 		clientWs:    ws,
+		clientIp:    clientIp,
 	}
 }
 
@@ -82,6 +84,8 @@ func ws(c *gin.Context) {
 	if group == "" {
 		return
 	}
+	clientIP := c.ClientIP()
+
 	//没有给客户端id的话 就用uuid给他生成一个
 	if clientId == "" {
 		clientId = utils.GetUUID()
@@ -91,7 +95,7 @@ func ws(c *gin.Context) {
 		log.Error("websocket err:", err)
 		return
 	}
-	client := NewClient(group, clientId, wsClient)
+	client := NewClient(group, clientId, wsClient, clientIP)
 	hlSyncMap.Store(group+"->"+clientId, client)
 	utils.LogPrint("新上线group:" + group + ",clientId:->" + clientId)
 	clientNameJson := `{"registerId":"` + clientId + `"}`
@@ -109,21 +113,21 @@ func ws(c *gin.Context) {
 		messageStruct := MessageResponse{}
 		err = json.Unmarshal(message, &messageStruct)
 		if err != nil {
-			log.Error("接收到的消息不是设定的格式 不做处理", err)
+			log.Error("当前IP：", clientIP, "接收到的消息不是设定的格式 不做处理", err)
 		}
 		action := messageStruct.Action
 		messageId := messageStruct.MessageId
 		msg := messageStruct.ResponseData
 		// 这里直接给管道塞数据，那么之前发送的时候要初始化好
 		if client.readFromMap(action, messageId) == nil {
-			log.Warning("当前消息id：", messageId, " 已被超时释放，回调的数据不做处理")
+			log.Warning("当前IP：", clientIP, "当前消息id：", messageId, " 已被超时释放，回调的数据不做处理")
 		} else {
 			client.writeToMap(action, messageId, msg)
 		}
 		if len(msg) > 100 {
 			utils.LogPrint("id", messageId, "get_message:", msg[:101]+"......")
 		} else {
-			utils.LogPrint("id", messageId, "get_message:", msg)
+			utils.LogPrint("IP", clientIP, "id", messageId, "get_message:", msg)
 		}
 
 	}
@@ -181,7 +185,7 @@ func GetCookie(c *gin.Context) {
 		return
 	}
 	c3 := make(chan string, 1)
-	go client.GQueryFunc("_execjs", utils.ConcatCode("document.cookie"), c3)
+	go client.GQueryFunc("_execjs", utils.ConcatCode("document.cookie"), c3, client.clientId)
 	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c3})
 }
 
@@ -192,7 +196,7 @@ func GetHtml(c *gin.Context) {
 		return
 	}
 	c3 := make(chan string, 1)
-	go client.GQueryFunc("_execjs", utils.ConcatCode("document.documentElement.outerHTML"), c3)
+	go client.GQueryFunc("_execjs", utils.ConcatCode("document.documentElement.outerHTML"), c3, client.clientId)
 	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c3})
 }
 
@@ -214,7 +218,7 @@ func getResult(c *gin.Context) {
 		return
 	}
 	c2 := make(chan string, 1)
-	go client.GQueryFunc(action, RequestParam.Param, c2)
+	go client.GQueryFunc(action, RequestParam.Param, c2, client.clientIp)
 	//把管道传过去，获得值就返回了
 	c.JSON(http.StatusOK, gin.H{"status": 200, "group": client.clientGroup, "clientId": client.clientId, "data": <-c2})
 
@@ -240,7 +244,7 @@ func execjs(c *gin.Context) {
 		return
 	}
 	c2 := make(chan string)
-	go client.GQueryFunc(Action, JsCode, c2)
+	go client.GQueryFunc(Action, JsCode, c2, client.clientIp)
 	c.JSON(200, gin.H{"status": "200", "group": client.clientGroup, "name": client.clientId, "data": <-c2})
 
 }

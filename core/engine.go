@@ -11,7 +11,7 @@ import (
 )
 
 // GQueryFunc 发送请求到客户端
-func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string) {
+func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string, clientIp string) {
 	if c.actionData[funcName] == nil {
 		rwMu.Lock()
 		c.actionData[funcName] = make(map[string]chan string)
@@ -40,7 +40,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
 	data, err := json.Marshal(WriteData)
 	if err != nil {
-		log.Error(err, "JSON序列化失败")
+		log.Error("当前IP：", clientIp, err, "JSON序列化失败")
 		resChan <- "JSON序列化失败"
 		return
 	}
@@ -49,7 +49,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	err = c.clientWs.WriteMessage(1, data)
 	rwMu.Unlock()
 	if err != nil {
-		log.Error(err, "写入数据失败")
+		log.Error("当前IP：", clientIp, err, "写入数据失败")
 		resChan <- "rpc发送数据失败"
 		return
 	}
@@ -65,9 +65,10 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	case res := <-resultChan:
 		resChan <- res
 	case <-ctx.Done():
-		utils.LogPrint(MessageId + "超时了")
+		utils.LogPrint("当前IP：", clientIp, "超时了。", MessageId)
 		resChan <- "获取结果超时 timeout"
 	}
+
 }
 
 func getRandomClient(group string, clientId string) *Clients {

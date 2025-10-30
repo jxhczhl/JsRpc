@@ -21,8 +21,8 @@ func ReadConf() ConfStruct {
 	conf, err := initConf(ConfigPath)
 	if err != nil {
 		log.Warning(
-			"使用默认配置运行 ", err.Error(),
-			" 配置参考 https://github.com/jxhczhl/JsRpc/blob/main/config.yaml")
+			"使用默认配置运行 ", err.Error(), "\n",
+			"配置参考 https://github.com/jxhczhl/JsRpc/blob/main/config.yaml")
 	}
 	return conf
 }
