@@ -84,9 +84,14 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
     }
     try {
         if (!result["param"]) {
-            theHandler(function (response) {
+            const async_result = theHandler(function (response) {
                 _this.sendResult(action, message_id, response);
             })
+            if (async_result && typeof async_result.then === "function") {
+                async_result.catch(e => {
+                    _this.sendResult(action, message_id, "" + e);
+                });
+            }
             return
         }
         var param = result["param"]
@@ -99,7 +104,7 @@ Hlclient.prototype.handlerRequest = function (requestJson) {
         }, param)
     } catch (e) {
         console.log("error: " + e);
-        _this.sendResult(action, message_id, e);
+        _this.sendResult(action, message_id, "" + e);
     }
 }
 Hlclient.prototype.sendResult = function (action, message_id, e) {
