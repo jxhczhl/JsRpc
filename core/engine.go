@@ -5,13 +5,28 @@ import (
 	"JsRpc/utils"
 	"context"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // GQueryFunc 发送请求到客户端
 func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- string, clientIp string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("GQueryFunc panic recovered: ", r)
+			// 尝试安全地发送错误消息
+			defer func() {
+				if r2 := recover(); r2 != nil {
+					log.Error("发送错误消息到channel也失败了: ", r2)
+				}
+			}()
+			resChan <- "内部错误"
+			close(resChan)
+		}
+	}()
+
 	if c.actionData[funcName] == nil {
 		rwMu.Lock()
 		c.actionData[funcName] = make(map[string]chan string)
@@ -31,16 +46,35 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	// 确保资源释放
 	defer func() {
 		rwMu.Lock()
-		delete(c.actionData[funcName], MessageId)
+		if c.actionData[funcName] != nil {
+			if ch, exists := c.actionData[funcName][MessageId]; exists {
+				delete(c.actionData[funcName], MessageId)
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Debug("关闭已关闭的channel: ", r)
+						}
+					}()
+					close(ch)
+				}()
+			}
+		}
 		rwMu.Unlock()
-		close(resChan)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Debug("关闭resChan失败: ", r)
+				}
+			}()
+			close(resChan)
+		}()
 	}()
 
 	// 构造消息并发送
 	WriteData := Message{Param: param, MessageId: MessageId, Action: funcName}
 	data, err := json.Marshal(WriteData)
 	if err != nil {
-		log.Error("当前IP：", clientIp, err, "JSON序列化失败")
+		log.Error("当前IP：", clientIp, " JSON序列化失败: ", err)
 		resChan <- "JSON序列化失败"
 		return
 	}
@@ -49,7 +83,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	err = c.clientWs.WriteMessage(1, data)
 	rwMu.Unlock()
 	if err != nil {
-		log.Error("当前IP：", clientIp, err, "写入数据失败")
+		log.Error("当前IP：", clientIp, " 写入数据失败: ", err)
 		resChan <- "rpc发送数据失败"
 		return
 	}
@@ -68,18 +102,27 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 		utils.LogPrint("当前IP：", clientIp, "超时了。", MessageId)
 		resChan <- "获取结果超时 timeout"
 	}
-
 }
 
 func getRandomClient(group string, clientId string) *Clients {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("getRandomClient panic recovered: ", r)
+		}
+	}()
+
 	var client *Clients
 	// 不传递clientId时候，从group分组随便拿一个
 	if clientId != "" {
 		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
-		if ok == false {
+		if !ok {
 			return nil
 		}
-		client, _ = clientName.(*Clients)
+		client, ok = clientName.(*Clients)
+		if !ok {
+			log.Error("类型断言失败：无法将clientName转换为*Clients")
+			return nil
+		}
 		return client
 	}
 	groupClients := make([]*Clients, 0)
@@ -87,6 +130,7 @@ func getRandomClient(group string, clientId string) *Clients {
 	hlSyncMap.Range(func(_, value interface{}) bool {
 		tmpClients, ok := value.(*Clients)
 		if !ok {
+			log.Warning("类型断言失败：无法将value转换为*Clients")
 			return true
 		}
 		if tmpClients.clientGroup == group {

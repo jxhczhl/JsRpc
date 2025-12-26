@@ -7,6 +7,12 @@ import (
 )
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			utils.ErrorPrint("程序异常退出: ", r)
+		}
+	}()
+
 	utils.PrintJsRpc()                // 开屏打印
 	utils.InitLogger()                // 初始化日志
 	baseConf := config.ReadConf()     // 读取日志信息

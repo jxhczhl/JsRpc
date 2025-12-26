@@ -32,3 +32,8 @@ func LogPrint(p ...interface{}) {
 		log.Infoln(p)
 	}
 }
+func ErrorPrint(p ...interface{}) {
+	if isPrint {
+		log.Error(p)
+	}
+}

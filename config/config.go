@@ -4,14 +4,21 @@ import (
 	"JsRpc/utils"
 	"errors"
 	"flag"
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
-	"os"
 )
 
 var DefaultTimeout = 30
 
 func ReadConf() ConfStruct {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("读取配置文件异常: ", r)
+		}
+	}()
+
 	var ConfigPath string
 	// 定义命令行参数-c，后面跟着的是默认值以及参数说明
 	flag.StringVar(&ConfigPath, "c", "config.yaml", "指定配置文件的路径")
@@ -28,6 +35,12 @@ func ReadConf() ConfStruct {
 }
 
 func initConf(path string) (ConfStruct, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("initConf panic recovered: ", r)
+		}
+	}()
+
 	defaultConf := ConfStruct{
 		BasicListen: `:12080`,
 		HttpsServices: HttpsConfig{
@@ -44,19 +57,28 @@ func initConf(path string) (ConfStruct, error) {
 		return defaultConf, errors.New("config path not found")
 	}
 
-	file, _ := os.Open(path) // 因为上面已经判断了 文件是存在的 所以这里不用捕获错误
+	file, err := os.Open(path)
+	if err != nil {
+		log.Error("打开配置文件失败: ", err)
+		return defaultConf, err
+	}
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
+			log.Error("关闭配置文件失败: ", err)
 		}
 	}(file)
 	conf := ConfStruct{}
 	decoder := yaml.NewDecoder(file)
-	err := decoder.Decode(&conf)
+	err = decoder.Decode(&conf)
 	if err != nil {
+		log.Error("解析配置文件失败: ", err)
 		return defaultConf, err
 	}
-	DefaultTimeout = conf.DefaultTimeOut
+	// 设置超时时间
+	if conf.DefaultTimeOut > 0 {
+		DefaultTimeout = conf.DefaultTimeOut
+	}
 	return conf, nil
 }
 
