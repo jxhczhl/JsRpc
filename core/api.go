@@ -38,6 +38,7 @@ type MessageResponse struct {
 type ApiParam struct {
 	GroupName string `form:"group" json:"group"`
 	ClientId  string `form:"clientId" json:"clientId"`
+	Fuzzy     bool   `form:"fuzzy" json:"fuzzy"`
 	Action    string `form:"action" json:"action"`
 	Param     string `form:"param" json:"param"`
 	Code      string `form:"code" json:"code"` // 直接eval的代码
@@ -254,7 +255,7 @@ func checkRequestParam(c *gin.Context) (*Clients, string) {
 		return &Clients{}, "需要传入group"
 	}
 	clientId := RequestParam.ClientId
-	client := getRandomClient(group, clientId)
+	client := getRandomClient(group, clientId, RequestParam.Fuzzy)
 	if client == nil {
 		return &Clients{}, "没有找到对应的group或clientId,请通过list接口查看现有的注入"
 	}

@@ -96,9 +96,12 @@
 说明：接口用?group分组 如 "ws://127.0.0.1:12080/ws?group={}"
 以及可选参数 clientId
 clientId说明：以group分组后，如果有注册相同group的 可以传入这个id来区分客户端，如果不传 服务程序会自动生成一个。当访问调用接口时，服务程序随机发送请求到相同group的客户端里。
+`/go`、`/execjs`、`/page/cookie`、`/page/html` 调用接口支持可选参数 `clientId` 和 `fuzzy`。
+fuzzy说明：默认关闭，传入 `fuzzy=true` 或 `fuzzy=1` 后，指定 `clientId` 时会按模糊匹配查找，只要已连接客户端的 clientId 包含传入值，就会返回该客户端执行结果；匹配到多个客户端时，会优先从健康客户端中随机选择一个。
 
 //注入例子 group可以随便起名(必填)
 http://127.0.0.1:12080/go?group={}&action={}&param={} //这是调用的接口
+http://127.0.0.1:12080/go?group={}&clientId={}&fuzzy=true&action={}&param={} //指定clientId并开启模糊查找
 group填写上面注入时候的，action是注册的方法名,param是可选的参数 param可以传string类型或者object类型(会尝试用JSON.parse)
 
 ### 注入JS，构建通信环境（[/resouces/JsEnv_De.js](https://github.com/jxhczhl/JsRpc/blob/main/resouces/JsEnv_Dev.js)）
@@ -137,6 +140,9 @@ js_code = """
 url = "http://localhost:12080/execjs"
 data = {
     "group": "zzz",
+    # 可选：指定clientId；开启模糊查找时只需要填写clientId的一部分
+    # "clientId": "hliang",
+    # "fuzzy": "true", # 模糊查找/关闭则精确查找
     "code": js_code
 }
 res = requests.post(url, data=data)
@@ -222,6 +228,7 @@ print(res.text)
 ```python
 resp = requests.get("http://127.0.0.1:12080/page/html?group=zzz")     # 直接获取当前页面的html
 resp = requests.get("http://127.0.0.1:12080/page/cookie?group=zzz")   # 直接获取当前页面的cookie
+resp = requests.get("http://127.0.0.1:12080/page/html?group=zzz&clientId=hliang&fuzzy=true") # 指定clientId并开启模糊查找
 ```
 
 

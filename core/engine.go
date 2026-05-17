@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"math/rand"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -118,7 +119,7 @@ func (c *Clients) GQueryFunc(funcName string, param string, resChan chan<- strin
 	}
 }
 
-func getRandomClient(group string, clientId string) *Clients {
+func getRandomClient(group string, clientId string, fuzzy bool) *Clients {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("getRandomClient panic recovered: ", r)
@@ -128,6 +129,9 @@ func getRandomClient(group string, clientId string) *Clients {
 	var client *Clients
 	// 不传递clientId时候，从group分组随便拿一个
 	if clientId != "" {
+		if fuzzy {
+			return getFuzzyClient(group, clientId)
+		}
 		clientName, ok := hlSyncMap.Load(group + "->" + clientId)
 		if !ok {
 			return nil
@@ -140,6 +144,39 @@ func getRandomClient(group string, clientId string) *Clients {
 		return client
 	}
 	return getHealthyClient(group, "")
+}
+
+// getFuzzyClient 获取clientId包含指定内容的客户端
+func getFuzzyClient(group string, clientId string) *Clients {
+	healthyClients := make([]*Clients, 0)
+	unhealthyClients := make([]*Clients, 0)
+
+	hlSyncMap.Range(func(_, value interface{}) bool {
+		tmpClients, ok := value.(*Clients)
+		if !ok {
+			log.Warning("类型断言失败：无法将value转换为*Clients")
+			return true
+		}
+		if tmpClients.clientGroup != group || !strings.Contains(tmpClients.clientId, clientId) {
+			return true
+		}
+		if tmpClients.isHealthy && tmpClients.failCount < 3 {
+			healthyClients = append(healthyClients, tmpClients)
+		} else {
+			unhealthyClients = append(unhealthyClients, tmpClients)
+		}
+		return true
+	})
+
+	candidates := healthyClients
+	if len(candidates) == 0 {
+		candidates = unhealthyClients
+	}
+	if len(candidates) == 0 {
+		return nil
+	}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return candidates[r.Intn(len(candidates))]
 }
 
 // getHealthyClient 获取健康的客户端，排除指定的客户端
